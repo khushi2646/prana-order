@@ -33,19 +33,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center px-4">
-      <div className="bg-[#f8f5f0] rounded-2xl shadow-2xl p-10 w-full max-w-sm flex flex-col items-center gap-7">
+    <div className="min-h-screen bg-[#f8f5f0] flex items-center justify-center px-4">
+      <div className="bg-white rounded-2xl shadow-[0_4px_32px_rgba(69,97,88,0.12)] p-10 w-full max-w-sm flex flex-col items-center gap-7">
 
         {/* Brand */}
         <div className="flex flex-col items-center gap-2">
-          <div className="w-11 h-11 rounded-full bg-[#456158] flex items-center justify-center shadow-md">
-            <span
-              className="text-[#f8f5f0] text-xl font-bold leading-none"
-              style={{ fontFamily: 'var(--font-playfair), serif' }}
-            >
-              P
-            </span>
-          </div>
+          <img src="/prana_logo.png" alt="Prana Order" width={80} className="object-contain" />
           <h1
             className="text-[#1a1a1a] text-2xl font-semibold tracking-tight"
             style={{ fontFamily: 'var(--font-playfair), serif' }}
