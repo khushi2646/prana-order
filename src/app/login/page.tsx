@@ -37,15 +37,12 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-[0_4px_32px_rgba(69,97,88,0.12)] p-10 w-full max-w-sm flex flex-col items-center gap-7">
 
         {/* Brand */}
-        <div className="flex flex-col items-center gap-2">
-          <img src="/prana_logo.png" alt="Prana Order" width={80} className="object-contain" />
-          <h1
-            className="text-[#1a1a1a] text-2xl font-semibold tracking-tight"
-            style={{ fontFamily: 'var(--font-playfair), serif' }}
-          >
-            Prana Order
-          </h1>
-        </div>
+        <h1
+          className="text-[#1a1a1a] text-3xl font-semibold tracking-tight text-center"
+          style={{ fontFamily: 'var(--font-playfair), serif' }}
+        >
+          Prana Order
+        </h1>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">

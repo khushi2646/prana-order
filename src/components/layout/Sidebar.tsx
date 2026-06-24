@@ -50,7 +50,7 @@ export default function Sidebar() {
     <aside className="w-60 flex-shrink-0 bg-[#1a1a1a] flex flex-col h-full min-h-screen">
       {/* Logo */}
       <div className="px-4 py-5 border-b border-white/[0.07] flex justify-center">
-        <img src="/prana_logo.png" alt="Prana Order" width={140} className="object-contain" />
+        <img src="/prana_logo.png" alt="Prana" style={{ width: '120px' }} />
       </div>
 
       {/* Nav */}
