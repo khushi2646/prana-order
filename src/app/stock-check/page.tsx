@@ -43,23 +43,21 @@ export default function StockCheckPage() {
   const [stockError, setStockError]           = useState<string | null>(null);
   const [checked, setChecked]                 = useState(false);
 
-  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
   useEffect(() => {
-    fetch(`${base}/api/products?limit=500`, { cache: 'no-store' })
+    fetch('/api/products?limit=500', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
       .then((data: { products: Product[] }) => setProducts(data.products))
       .finally(() => setProductsLoading(false));
-  }, [base]);
+  }, []);
 
   const fetchStock = useCallback((productId: string) => {
     setStockLoading(true); setStockError(null); setStockLines([]); setChecked(false);
-    fetch(`${base}/api/stock-check/${productId}`)
+    fetch(`/api/stock-check/${productId}`)
       .then(r => r.ok ? r.json() : r.json().then((e: { message?: string }) => Promise.reject(e.message ?? r.statusText)))
       .then((data: StockLine[]) => { setStockLines(data); setChecked(true); })
       .catch((e: unknown) => setStockError(typeof e === 'string' ? e : 'Failed to load stock data.'))
       .finally(() => setStockLoading(false));
-  }, [base]);
+  }, []);
 
   const handleSelect = (product: Product) => {
     setSelected(product); setQuery(product.designNumber); setDropdownOpen(false); fetchStock(product._id);

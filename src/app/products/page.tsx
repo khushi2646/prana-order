@@ -254,8 +254,7 @@ export default function ProductsPage() {
 
   const fetchProducts = useCallback(() => {
     setLoading(true);
-    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-    fetch(`${base}/api/products?limit=500`, { cache: 'no-store' })
+    fetch('/api/products?limit=500', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : r.json().then((e: { message?: string }) => Promise.reject(e.message ?? r.statusText)))
       .then((data: { products: Product[] }) => setProducts(data.products))
       .catch((e: unknown) => setError(typeof e === 'string' ? e : 'Failed to connect to the API server.'))

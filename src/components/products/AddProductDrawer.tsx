@@ -175,8 +175,6 @@ function StoneLineRowAdd({
   const onUpdateRef = useRef(onUpdate);
   useEffect(() => { onUpdateRef.current = onUpdate; });
 
-  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
   useEffect(() => {
     if (!sl.shape || !sl.sizeLength) { setGauge(null); return; }
     clearTimeout(timerRef.current);
@@ -184,13 +182,13 @@ function StoneLineRowAdd({
       try {
         const p = new URLSearchParams({ shape: sl.shape, L: sl.sizeLength });
         if (sl.sizeWidth) p.set('W', sl.sizeWidth);
-        const res = await fetch(`${base}/api/gauge/lookup?${p}`);
+        const res = await fetch(`/api/gauge/lookup?${p}`);
         if (!res.ok) return;
         setGauge(await res.json());
       } catch { /* network error */ }
     }, 500);
     return () => clearTimeout(timerRef.current);
-  }, [sl.shape, sl.sizeLength, sl.sizeWidth, i, base]);
+  }, [sl.shape, sl.sizeLength, sl.sizeWidth, i]);
 
   useEffect(() => {
     if (!gauge) return;
@@ -355,8 +353,7 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
     setError(null);
     setSaving(true);
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-      const res = await fetch(`${base}/api/products`, {
+      const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

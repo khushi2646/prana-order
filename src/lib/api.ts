@@ -1,6 +1,6 @@
 import type { Product, ProductsResponse, Stats } from '@/types';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
+const BASE = '';
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {

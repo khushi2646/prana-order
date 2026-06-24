@@ -48,14 +48,12 @@ export default function GaugePage() {
   const [saving,     setSaving]     = useState(false);
   const [saveErr,    setSaveErr]    = useState<string | null>(null);
 
-  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true); setFetchErr(null);
       try {
-        const res = await fetch(`${base}/api/gauge`, { cache: 'no-store' });
+        const res = await fetch('/api/gauge', { cache: 'no-store' });
         if (!res.ok) throw new Error('Failed to load gauge data');
         const data: GaugeEntry[] = await res.json();
         if (!cancelled) setEntries(data);
@@ -67,7 +65,7 @@ export default function GaugePage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [base]);
+  }, []);
 
   function switchTab(tab: 'Round' | 'Fancy') { setActiveTab(tab); setEditId(null); setSaveErr(null); }
 
@@ -84,7 +82,7 @@ export default function GaugePage() {
     if (!Number.isFinite(carat) || carat <= 0) { setSaveErr('Carat must be positive'); return; }
     setSaving(true); setSaveErr(null);
     try {
-      const res = await fetch(`${base}/api/gauge/${editId}`, {
+      const res = await fetch(`/api/gauge/${editId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ caratPerStone: carat, avgRatePerCt: editRate !== '' ? parseFloat(editRate) : null }),
       });

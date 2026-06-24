@@ -1100,12 +1100,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [renaming, setRenaming]         = useState(false);
   const [renameErr, setRenameErr]       = useState<string | null>(null);
 
-  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
   const fetchProduct = useCallback(async () => {
     setLoading(true); setFetchErr(null);
     try {
-      const res = await fetch(`${base}/api/products/${id}`, { cache: 'no-store' });
+      const res = await fetch(`/api/products/${id}`, { cache: 'no-store' });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Not found');
       const p: Product = await res.json();
       setProduct(p);
@@ -1116,12 +1114,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     } finally {
       setLoading(false);
     }
-  }, [id, base]);
+  }, [id]);
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
 
   async function putField(body: Record<string, unknown>) {
-    const res = await fetch(`${base}/api/products/${id}`, {
+    const res = await fetch(`/api/products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1136,7 +1134,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }
 
   async function putVersionField(versionNumber: number, body: Record<string, unknown>) {
-    const res = await fetch(`${base}/api/products/${id}/versions/${versionNumber}`, {
+    const res = await fetch(`/api/products/${id}/versions/${versionNumber}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1182,7 +1180,7 @@ async function submitVersion(draft: VersionDraft) {
       remarks:                draft.remarks || undefined,
       stoneLines:             draft.stoneLines.map(fromLocalLine),
     };
-    const res = await fetch(`${base}/api/products/${id}/versions`, {
+    const res = await fetch(`/api/products/${id}/versions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -1453,10 +1451,10 @@ async function submitVersion(draft: VersionDraft) {
       <StoneLines
         key={activeTab}
         initial={slot.stoneLines ?? []}
-        onSave={lines => isV1
-          ? putField({ stoneLines: lines })
-          : putVersionField(activeTab, { stoneLines: lines })
-        }
+        onSave={async lines => {
+          if (isV1) await putField({ stoneLines: lines });
+          else await putVersionField(activeTab, { stoneLines: lines });
+        }}
       />
 
       {/* ── Change Log ────────────────────────────────────────────────────── */}
