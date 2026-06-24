@@ -49,16 +49,8 @@ export default function Sidebar() {
   return (
     <aside className="w-60 flex-shrink-0 bg-[#1a1a1a] flex flex-col h-full min-h-screen">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/[0.07]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0">
-            <GemIcon className="w-4 h-4 text-white" />
-          </div>
-          <div className="leading-none">
-            <p className="text-[#f5f0e8] font-semibold text-[16px] tracking-tight" style={{ fontFamily: 'var(--font-playfair), serif' }}>Prana</p>
-            <p className="text-[#f5f0e8]/40 text-[9px] tracking-[0.22em] uppercase mt-0.5">Order</p>
-          </div>
-        </div>
+      <div className="px-4 py-5 border-b border-white/[0.07] flex justify-center">
+        <img src="/prana_logo.png" alt="Prana Order" width={140} className="object-contain" />
       </div>
 
       {/* Nav */}
