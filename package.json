@@ -12,7 +12,6 @@
     "dev:all": "concurrently -n next,api -c cyan,green \"npm run dev\" \"npm run dev:server\""
   },
   "dependencies": {
-    "@tailwindcss/oxide-win32-x64-msvc": "^4.3.1",
     "autoprefixer": "^10.5.0",
     "concurrently": "^10.0.3",
     "cors": "^2.8.6",
