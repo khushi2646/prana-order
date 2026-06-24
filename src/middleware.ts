@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const session = request.cookies.get('prana-session');
   if (session?.value === 'authenticated') {
     return NextResponse.next();
@@ -10,5 +10,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!login|api/auth|_next|favicon.ico|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.ico|.*\\.css|.*\\.js).*)'],
+  matcher: ['/((?!login|api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)',],
 };
