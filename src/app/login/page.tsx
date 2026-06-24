@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [password, setPassword] = useState('');
   const [error, setError]       = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
@@ -24,7 +22,7 @@ export default function LoginPage() {
         setError(data.message ?? 'Incorrect password');
         return;
       }
-      router.push('/products');
+      window.location.href = '/products';
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
