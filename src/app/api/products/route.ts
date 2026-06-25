@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { SortOrder } from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { calcStoneTotals } from '@/lib/productUtils';
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     if (status)   query.status   = status;
     if (style)    query.style    = style;
 
-    const sortMap: Record<string, Record<string, number>> = {
+    const sortMap: Record<string, Record<string, SortOrder>> = {
       newest: { createdAt: -1 },
       oldest: { createdAt:  1 },
       az:     { designNumber:  1 },
