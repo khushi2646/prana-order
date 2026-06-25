@@ -605,6 +605,13 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
 
 // ── Stone line row (edit mode) ────────────────────────────────────────────────
 
+interface GaugeHint {
+  caratPerStone: number;
+  avgRatePerCt: number | null;
+  isExact: boolean;
+  matchedSizeStr: string;
+}
+
 function StoneLineRowEdit({
   sl, i, onUpdate, onRemove, compact = false,
 }: {
@@ -614,6 +621,39 @@ function StoneLineRowEdit({
   onRemove: (i: number) => void;
   compact?: boolean;
 }) {
+  const [gauge, setGauge] = useState<GaugeHint | null>(null);
+  const timerRef    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const onUpdateRef = useRef(onUpdate);
+  useEffect(() => { onUpdateRef.current = onUpdate; });
+
+  useEffect(() => {
+    if (!sl.shape || !sl.sizeLength) { setGauge(null); return; }
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const p = new URLSearchParams({ shape: sl.shape, L: sl.sizeLength });
+        if (sl.sizeWidth) p.set('W', sl.sizeWidth);
+        const res = await fetch(`/api/gauge/lookup?${p}`);
+        if (!res.ok) return;
+        setGauge(await res.json());
+      } catch { /* network error */ }
+    }, 500);
+    return () => clearTimeout(timerRef.current);
+  }, [sl.shape, sl.sizeLength, sl.sizeWidth]);
+
+  useEffect(() => {
+    if (!gauge) return;
+    const cnt = sl.count ?? 0;
+    onUpdateRef.current(i, 'totalWeight', parseFloat((cnt * gauge.caratPerStone).toFixed(3)));
+  }, [sl.count, gauge, i]);
+
+  const estCost = (() => {
+    if (!gauge) return null;
+    if (gauge.avgRatePerCt == null) return 'Cost N/A';
+    const tw = sl.totalWeight ?? 0;
+    return `₹ ${Math.round(tw * gauge.avgRatePerCt).toLocaleString('en-IN')}`;
+  })();
+
   const td  = 'px-1.5 py-1.5';
   const inp = 'rounded border border-gray-200 px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand/25 focus:border-brand';
   const w   = compact
@@ -621,54 +661,71 @@ function StoneLineRowEdit({
     : { type: 'w-[118px]', shape: 'w-[110px]', sz: 'w-[48px]', col: 'w-[64px]', cnt: 'w-[52px]', wt: 'w-[64px]', txt: 'w-[70px]' };
 
   return (
-    <tr>
-      <td className={td}>
-        <select value={sl.stoneType} onChange={e => onUpdate(i, 'stoneType', e.target.value)}
-          className={`${inp} ${w.type} bg-white`}>
-          <option value="">Type…</option>
-          {STONE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </td>
-      <td className={td}>
-        <select value={sl.shape} onChange={e => onUpdate(i, 'shape', e.target.value)}
-          className={`${inp} ${w.shape} bg-white`}>
-          <option value="">—</option>
-          {SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </td>
-      <td className={td}>
-        <div className="flex items-center gap-0.5">
-          <input type="number" min="0" step="0.01" placeholder="L" className={`${inp} ${w.sz}`}
-            value={sl.sizeLength} onChange={e => onUpdate(i, 'sizeLength', e.target.value)} />
-          <span className="text-gray-300 text-[10px] px-0.5">×</span>
-          <input type="number" min="0" step="0.01" placeholder="W" className={`${inp} ${w.sz}`}
-            value={sl.sizeWidth} onChange={e => onUpdate(i, 'sizeWidth', e.target.value)} />
-        </div>
-      </td>
-      <td className={td}>
-        <input type="text" placeholder="WHITE" className={`${inp} ${w.col}`}
-          value={sl.colour} onChange={e => onUpdate(i, 'colour', e.target.value.toUpperCase())} />
-      </td>
-      <td className={td}>
-        <input type="number" min="0" step="1" className={`${inp} ${w.cnt}`} placeholder="0"
-          value={sl.count ?? ''} onChange={e => onUpdate(i, 'count', e.target.value ? parseInt(e.target.value) : undefined)} />
-      </td>
-      <td className={td}>
-        <input type="number" min="0" step="0.001" className={`${inp} ${w.wt}`} placeholder="0.000"
-          value={sl.totalWeight ?? ''} onChange={e => onUpdate(i, 'totalWeight', e.target.value ? parseFloat(e.target.value) : undefined)} />
-      </td>
-      <td className={td}>
-        <input type="text" className={`${inp} ${w.txt}`} placeholder="—"
-          value={sl.setting} onChange={e => onUpdate(i, 'setting', e.target.value)} />
-      </td>
-      <td className={td}>
-        <input type="text" className={`${inp} ${w.txt}`} placeholder="—"
-          value={sl.remarks} onChange={e => onUpdate(i, 'remarks', e.target.value)} />
-      </td>
-      <td className="px-2 py-1.5 text-center">
-        <button type="button" onClick={() => onRemove(i)} className="text-gray-300 hover:text-red-400 transition-colors"><TrashIcon /></button>
-      </td>
-    </tr>
+    <>
+      <tr>
+        <td className={td}>
+          <select value={sl.stoneType} onChange={e => onUpdate(i, 'stoneType', e.target.value)}
+            className={`${inp} ${w.type} bg-white`}>
+            <option value="">Type…</option>
+            {STONE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </td>
+        <td className={td}>
+          <select value={sl.shape} onChange={e => onUpdate(i, 'shape', e.target.value)}
+            className={`${inp} ${w.shape} bg-white`}>
+            <option value="">—</option>
+            {SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </td>
+        <td className={td}>
+          <div className="flex items-center gap-0.5">
+            <input type="number" min="0" step="0.01" placeholder="L" className={`${inp} ${w.sz}`}
+              value={sl.sizeLength} onChange={e => onUpdate(i, 'sizeLength', e.target.value)} />
+            <span className="text-gray-300 text-[10px] px-0.5">×</span>
+            <input type="number" min="0" step="0.01" placeholder="W" className={`${inp} ${w.sz}`}
+              value={sl.sizeWidth} onChange={e => onUpdate(i, 'sizeWidth', e.target.value)} />
+          </div>
+          {gauge && (
+            <p className="text-[10px] text-gray-400 mt-0.5">{gauge.caratPerStone} ct/stone</p>
+          )}
+        </td>
+        <td className={td}>
+          <input type="text" placeholder="WHITE" className={`${inp} ${w.col}`}
+            value={sl.colour} onChange={e => onUpdate(i, 'colour', e.target.value.toUpperCase())} />
+        </td>
+        <td className={td}>
+          <input type="number" min="0" step="1" className={`${inp} ${w.cnt}`} placeholder="0"
+            value={sl.count ?? ''} onChange={e => onUpdate(i, 'count', e.target.value ? parseInt(e.target.value) : undefined)} />
+        </td>
+        <td className={td}>
+          <input type="number" min="0" step="0.001" className={`${inp} ${w.wt}`} placeholder="0.000"
+            value={sl.totalWeight ?? ''} onChange={e => onUpdate(i, 'totalWeight', e.target.value ? parseFloat(e.target.value) : undefined)} />
+          {estCost && (
+            <p className="text-[10px] text-gray-400 mt-0.5 whitespace-nowrap">{estCost}</p>
+          )}
+        </td>
+        <td className={td}>
+          <input type="text" className={`${inp} ${w.txt}`} placeholder="—"
+            value={sl.setting} onChange={e => onUpdate(i, 'setting', e.target.value)} />
+        </td>
+        <td className={td}>
+          <input type="text" className={`${inp} ${w.txt}`} placeholder="—"
+            value={sl.remarks} onChange={e => onUpdate(i, 'remarks', e.target.value)} />
+        </td>
+        <td className="px-2 py-1.5 text-center">
+          <button type="button" onClick={() => onRemove(i)} className="text-gray-300 hover:text-red-400 transition-colors"><TrashIcon /></button>
+        </td>
+      </tr>
+      {gauge && !gauge.isExact && (
+        <tr>
+          <td colSpan={9} className="px-3 pb-1.5 pt-0">
+            <span className="inline-flex items-center text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded px-2 py-0.5">
+              Nearest match: {gauge.matchedSizeStr}
+            </span>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
