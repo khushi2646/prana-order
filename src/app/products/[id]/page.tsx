@@ -82,6 +82,18 @@ const EMPTY_LOCAL_LINE: LocalLine = {
   count: undefined, totalWeight: undefined, setting: '', remarks: '',
 };
 
+const CATEGORY_MAP: Record<string, { code: string; styles: { label: string; code: string }[] }> = {
+  Ring:               { code: 'RNG', styles: [{ label: 'Solitaire Ring', code: 'SOLR' }, { label: 'Two Stone Ring', code: 'TWOR' }, { label: 'Three Stone Ring', code: 'THRR' }, { label: 'Cocktail Ring', code: 'COKR' }, { label: 'Cocktail Ring with Colourstone', code: 'CSCR' }, { label: 'Fancy Ring', code: 'FANC' }, { label: 'Fancy Band', code: 'FBNR' }, { label: 'Band Ring', code: 'BAND' }, { label: 'Daily Ring', code: 'DALY' }] },
+  Earrings:           { code: 'ERG', styles: [{ label: 'Stud', code: 'STUD' }, { label: 'Solitaire', code: 'SOLE' }, { label: 'Two Stone', code: 'TWOE' }, { label: 'Fancy', code: 'FANE' }, { label: 'Cocktail', code: 'COKE' }, { label: 'Colourstone', code: 'COLE' }, { label: 'Halo', code: 'HALE' }, { label: 'Cluster', code: 'CLUE' }, { label: 'Danglers', code: 'DANL' }, { label: 'Drop', code: 'DROP' }, { label: 'Long', code: 'LONG' }, { label: 'Hoops', code: 'HOOP' }, { label: 'Huggies', code: 'HUGG' }, { label: 'Jhumka', code: 'JHUM' }, { label: 'Chandbali', code: 'CHAN' }, { label: 'Ear Cuff', code: 'CUFF' }, { label: 'Ear Jacket', code: 'JACK' }] },
+  Pendant:            { code: 'PDT', styles: [{ label: 'Solitaire', code: 'SOLP' }, { label: 'Two Stone', code: 'TWOP' }, { label: 'Fancy', code: 'FANP' }, { label: 'Cocktail', code: 'COKP' }, { label: 'Colourstone', code: 'COLP' }, { label: 'Daily', code: 'DAIL' }] },
+  'Pendant Set':      { code: 'PDS', styles: [{ label: 'Solitaire', code: 'SOPS' }, { label: 'Two Stone', code: 'TWPS' }, { label: 'Fancy', code: 'FNPS' }, { label: 'Cocktail', code: 'COPS' }, { label: 'Colourstone', code: 'CLPS' }, { label: 'Floral', code: 'FLPS' }, { label: 'Halo', code: 'HLPS' }, { label: 'Cluster', code: 'CLST' }] },
+  Necklace:           { code: 'NCK', styles: [{ label: 'Choker', code: 'CHKR' }, { label: 'Single Strand Tennis', code: 'SSTN' }, { label: 'Tennis', code: 'TENN' }, { label: 'Lariat', code: 'LART' }, { label: 'Collar', code: 'COLL' }, { label: 'Chain', code: 'CHNK' }, { label: 'Multi-line', code: 'MLNE' }, { label: 'Hasli Collar Choker', code: 'HCCN' }, { label: 'Fancy', code: 'FNNK' }] },
+  'Necklace Earrings':{ code: 'NKE', styles: [{ label: 'Necklace Earrings', code: 'NECK' }] },
+  Bracelet:           { code: 'BRC', styles: [{ label: 'Tennis', code: 'TENB' }, { label: 'Single Line', code: 'SLBR' }, { label: 'Station', code: 'STBR' }, { label: 'Oval Fancy', code: 'OVFB' }, { label: 'Solitaire Oval', code: 'SOVB' }, { label: 'Daily Oval', code: 'DOVB' }, { label: 'Fancy', code: 'FANB' }, { label: 'Cocktail', code: 'COKB' }, { label: 'Broad', code: 'BRDB' }, { label: 'Delicate', code: 'DELB' }, { label: 'Bangle', code: 'BNGL' }, { label: 'Kada', code: 'KADA' }, { label: 'Charm', code: 'CHRM' }] },
+  'Chain Pendant':    { code: 'CHP', styles: [{ label: 'Hanging Pieces', code: 'HNGP' }, { label: 'Attached Pieces', code: 'ATCP' }, { label: 'With Colourstone', code: 'WCOL' }, { label: 'Gold Links', code: 'GLNK' }, { label: 'Station Chain', code: 'STCH' }, { label: 'Lariat', code: 'LART' }, { label: 'Mangalsutra', code: 'MNGL' }] },
+};
+const CATEGORIES = Object.keys(CATEGORY_MAP);
+
 function emptyVersionDraft(): VersionDraft {
   return {
     name: '', size: '',
@@ -330,6 +342,113 @@ function SelectField({ label, display, value, options, onSave }: {
         <button onClick={startEdit}
           className="flex-1 text-left text-sm text-[#1a1a1a] hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
           {display}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Category field ────────────────────────────────────────────────────────────
+
+function CategoryField({ category, onSave }: {
+  category?: string;
+  onSave: (cat: string | undefined) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function startEdit() { setDraft(category ?? ''); setEditing(true); setErr(null); }
+
+  async function save() {
+    setSaving(true); setErr(null);
+    try { await onSave(draft || undefined); setEditing(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Save failed'); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-[#f8f5f0] last:border-0">
+      <span className="w-44 shrink-0 text-xs text-[#6b6560] pt-1">Category</span>
+      {editing ? (
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <select value={draft} onChange={e => setDraft(e.target.value)} autoFocus
+              className="flex-1 rounded-lg border border-brand/30 px-2.5 py-1.5 text-sm bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand">
+              <option value="">— select category —</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button onClick={save} disabled={saving}
+              className="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand/90 disabled:opacity-50 shrink-0 transition-colors">
+              {saving ? <Spinner /> : <CheckIcon />}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="w-7 h-7 rounded-lg border border-[#ddd5c8] text-[#6b6560] flex items-center justify-center hover:bg-[#f0ebe3] shrink-0 transition-colors">
+              <XSmall />
+            </button>
+          </div>
+          {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+        </div>
+      ) : (
+        <button onClick={startEdit}
+          className="flex-1 text-left text-sm text-[#1a1a1a] hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
+          {category || '—'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Style field ───────────────────────────────────────────────────────────────
+
+function StyleField({ style, category, onSave }: {
+  style?: string;
+  category?: string;
+  onSave: (style: string | undefined) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const styleOptions = CATEGORY_MAP[category ?? '']?.styles ?? [];
+
+  function startEdit() { setDraft(style ?? ''); setEditing(true); setErr(null); }
+
+  async function save() {
+    setSaving(true); setErr(null);
+    try { await onSave(draft || undefined); setEditing(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Save failed'); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-[#f8f5f0] last:border-0">
+      <span className="w-44 shrink-0 text-xs text-[#6b6560] pt-1">Style</span>
+      {editing ? (
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <select value={draft} onChange={e => setDraft(e.target.value)} autoFocus
+              className="flex-1 rounded-lg border border-brand/30 px-2.5 py-1.5 text-sm bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand">
+              <option value="">— select style —</option>
+              {styleOptions.map(s => <option key={s.code} value={s.label}>{s.label}</option>)}
+            </select>
+            <button onClick={save} disabled={saving}
+              className="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand/90 disabled:opacity-50 shrink-0 transition-colors">
+              {saving ? <Spinner /> : <CheckIcon />}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="w-7 h-7 rounded-lg border border-[#ddd5c8] text-[#6b6560] flex items-center justify-center hover:bg-[#f0ebe3] shrink-0 transition-colors">
+              <XSmall />
+            </button>
+          </div>
+          {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+        </div>
+      ) : (
+        <button onClick={startEdit}
+          className="flex-1 text-left text-sm text-[#1a1a1a] hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
+          {style || '—'}
         </button>
       )}
     </div>
@@ -1414,12 +1533,12 @@ async function submitVersion(draft: VersionDraft) {
           <div className="divide-y divide-[#f8f5f0]">
             {/* Product-level fields — V1 only */}
             {isV1 && (
-              <Field label="Category" display={product.category || '—'} editValue={product.category ?? ''}
-                onSave={v => putField({ category: v || undefined }).then(() => {})} />
+              <CategoryField category={product.category}
+                onSave={async cat => { await putField({ category: cat || undefined, style: null }); }} />
             )}
             {isV1 && (
-              <Field label="Style" display={product.style || '—'} editValue={product.style ?? ''}
-                onSave={v => putField({ style: v || undefined }).then(() => {})} />
+              <StyleField style={product.style} category={product.category}
+                onSave={async style => { await putField({ style: style || undefined }); }} />
             )}
 
             {/* Version-level fields — all tabs */}
