@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import DiamondGauge from '@/models/DiamondGauge';
+import { backfillProductsForGauge } from '@/lib/gaugeUtils';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,6 +25,11 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
       { returnDocument: 'after', runValidators: true },
     );
     if (!entry) return NextResponse.json({ message: 'Gauge entry not found' }, { status: 404 });
+
+    // Fire-and-forget: propagate new carat weight to all matching stone lines
+    backfillProductsForGauge(entry.shape, entry.sizeStr, entry.caratPerStone).catch(err =>
+      console.error('[gauge PUT] backfill failed:', err),
+    );
 
     return NextResponse.json(entry);
   } catch (err) {

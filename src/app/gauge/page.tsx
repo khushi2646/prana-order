@@ -8,6 +8,15 @@ interface GaugeEntry {
   caratPerStone: number; avgRatePerCt: number | null;
 }
 
+interface AddForm {
+  type: 'ROUND' | 'FANCY'; shape: string;
+  L: string; W: string; caratPerStone: string; avgRatePerCt: string;
+}
+
+const EMPTY_ADD: AddForm = { type: 'ROUND', shape: '', L: '', W: '', caratPerStone: '', avgRatePerCt: '' };
+
+const FANCY_SHAPES = ['PEAR','MARQUISE','OVAL','PRINCESS','CUSHION','EMERALD','RADIANT','BAGUETTE','HEART','TRILLION','LOZENGE'] as const;
+
 function fmtCarat(v: number): string { return parseFloat(v.toFixed(4)).toString(); }
 function fmtPcs(v: number):  string  { return v > 0 ? (1 / v).toFixed(2) : '—'; }
 function fmtRate(v: number | null): string { return v != null ? '₹ ' + Math.round(v).toLocaleString('en-IN') : '—'; }
@@ -17,6 +26,9 @@ function fmtCost(carat: number, rate: number | null): string {
   return '₹ ' + (v >= 100 ? Math.round(v).toLocaleString('en-IN') : v.toFixed(2));
 }
 
+function PlusIcon() {
+  return <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}><path strokeLinecap="round" d="M12 4v16m8-8H4"/></svg>;
+}
 function PencilIcon() {
   return <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
 }
@@ -29,6 +41,8 @@ function XIcon() {
 function Spinner() {
   return <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />;
 }
+
+const modalInp = 'w-full rounded-lg border border-[#ddd5c8] px-3 py-2 text-sm text-[#1a1a1a] bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
 const th  = 'px-4 py-3 text-left text-[11px] font-semibold text-[#6b6560] uppercase tracking-wider whitespace-nowrap';
 const thr = 'px-4 py-3 text-right text-[11px] font-semibold text-[#6b6560] uppercase tracking-wider whitespace-nowrap';
@@ -47,6 +61,10 @@ export default function GaugePage() {
   const [editRate,   setEditRate]   = useState('');
   const [saving,     setSaving]     = useState(false);
   const [saveErr,    setSaveErr]    = useState<string | null>(null);
+  const [showAdd,    setShowAdd]    = useState(false);
+  const [addForm,    setAddForm]    = useState<AddForm>(EMPTY_ADD);
+  const [addErr,     setAddErr]     = useState<string | null>(null);
+  const [addSaving,  setAddSaving]  = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +113,30 @@ export default function GaugePage() {
     } finally { setSaving(false); }
   }
 
+  function closeAdd() { setShowAdd(false); setAddForm(EMPTY_ADD); setAddErr(null); }
+
+  async function submitAdd() {
+    const Lnum    = parseFloat(addForm.L);
+    const caratNum = parseFloat(addForm.caratPerStone);
+    if (!Number.isFinite(Lnum) || Lnum <= 0) { setAddErr('Size L must be a positive number'); return; }
+    if (addForm.type === 'FANCY' && !addForm.shape) { setAddErr('Shape is required for FANCY type'); return; }
+    if (!Number.isFinite(caratNum) || caratNum <= 0) { setAddErr('Carat/Stone must be a positive number'); return; }
+    setAddSaving(true); setAddErr(null);
+    try {
+      const res = await fetch('/api/gauge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addForm),
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})) as { message?: string }; throw new Error(e.message ?? 'Failed'); }
+      const created: GaugeEntry = await res.json();
+      setEntries(prev => [...prev, created]);
+      setActiveTab(created.type === 'ROUND' ? 'Round' : 'Fancy');
+      if (created.type === 'FANCY') setShapeFilter(created.shape);
+      closeAdd();
+    } catch (e) { setAddErr(e instanceof Error ? e.message : 'Failed to create entry'); }
+    finally { setAddSaving(false); }
+  }
+
   const roundEntries  = entries.filter(e => e.type === 'ROUND').sort((a, b) => a.L - b.L);
   const fancyShapes   = [...new Set(entries.filter(e => e.type === 'FANCY').map(e => e.shape))].sort();
   const fancyEntries  = entries.filter(e => e.type === 'FANCY' && (!shapeFilter || e.shape === shapeFilter)).sort((a, b) => a.shape.localeCompare(b.shape) || a.L - b.L);
@@ -117,9 +159,15 @@ export default function GaugePage() {
     <div className="p-8 space-y-5 max-w-5xl">
 
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#1a1a1a] tracking-tight">Diamond Gauge</h1>
-        <p className="text-sm text-[#6b6560] mt-0.5">{entries.length} size references</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a] tracking-tight">Diamond Gauge</h1>
+          <p className="text-sm text-[#6b6560] mt-0.5">{entries.length} size references</p>
+        </div>
+        <button onClick={() => setShowAdd(true)}
+          className="flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-sm font-semibold rounded-lg hover:bg-brand/90 active:bg-brand/80 transition-colors shadow-sm">
+          <PlusIcon /> Add Entry
+        </button>
       </div>
 
       {/* Tabs */}
@@ -237,6 +285,97 @@ export default function GaugePage() {
           </table>
         </div>
       </div>
+
+      {/* ── Add Entry Modal ──────────────────────────────────────────── */}
+      {showAdd && (
+        <>
+          <div aria-hidden className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" onClick={closeAdd} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={closeAdd}>
+            <div className="bg-white rounded-2xl shadow-2xl border border-[#e8e0d4] w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="h-1 bg-brand rounded-t-2xl" />
+              <div className="px-6 py-5">
+                <h2 className="text-[15px] font-bold text-[#1a1a1a] mb-4">Add Gauge Entry</h2>
+                <div className="space-y-3">
+
+                  {/* Type */}
+                  <div>
+                    <label className="block text-xs font-medium text-[#6b6560] mb-1">Type</label>
+                    <select value={addForm.type}
+                      onChange={e => setAddForm(p => ({ ...p, type: e.target.value as 'ROUND' | 'FANCY', shape: '' }))}
+                      className={modalInp}>
+                      <option value="ROUND">ROUND</option>
+                      <option value="FANCY">FANCY</option>
+                    </select>
+                  </div>
+
+                  {/* Shape — FANCY only */}
+                  {addForm.type === 'FANCY' && (
+                    <div>
+                      <label className="block text-xs font-medium text-[#6b6560] mb-1">Shape</label>
+                      <select value={addForm.shape}
+                        onChange={e => setAddForm(p => ({ ...p, shape: e.target.value }))}
+                        className={modalInp}>
+                        <option value="">— select shape —</option>
+                        {FANCY_SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Size L / W */}
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-[#6b6560] mb-1">Size L (mm)</label>
+                      <input type="number" min="0" step="0.01" placeholder="e.g. 1.30"
+                        value={addForm.L} onChange={e => setAddForm(p => ({ ...p, L: e.target.value }))}
+                        className={modalInp} />
+                    </div>
+                    {addForm.type === 'FANCY' && (
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-[#6b6560] mb-1">Size W (mm) <span className="text-[#6b6560]/50 font-normal">optional</span></label>
+                        <input type="number" min="0" step="0.01" placeholder="—"
+                          value={addForm.W} onChange={e => setAddForm(p => ({ ...p, W: e.target.value }))}
+                          className={modalInp} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Carat/Stone */}
+                  <div>
+                    <label className="block text-xs font-medium text-[#6b6560] mb-1">Carat/Stone</label>
+                    <input type="number" min="0" step="0.0001" placeholder="e.g. 0.015"
+                      value={addForm.caratPerStone} onChange={e => setAddForm(p => ({ ...p, caratPerStone: e.target.value }))}
+                      className={modalInp} />
+                  </div>
+
+                  {/* Avg ₹/ct */}
+                  <div>
+                    <label className="block text-xs font-medium text-[#6b6560] mb-1">
+                      Avg ₹/ct <span className="text-[#6b6560]/50 font-normal">optional</span>
+                    </label>
+                    <input type="number" min="0" step="1" placeholder="—"
+                      value={addForm.avgRatePerCt} onChange={e => setAddForm(p => ({ ...p, avgRatePerCt: e.target.value }))}
+                      className={modalInp} />
+                  </div>
+
+                  {addErr && <p className="text-xs text-red-500">{addErr}</p>}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 mt-5">
+                  <button onClick={closeAdd}
+                    className="px-4 py-2 text-sm font-semibold text-[#6b6560] border border-[#ddd5c8] rounded-lg hover:bg-[#f8f5f0] transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={submitAdd} disabled={addSaving}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-brand rounded-lg hover:bg-brand/90 disabled:opacity-60 transition-colors">
+                    {addSaving && <Spinner />}
+                    Add Entry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
