@@ -39,6 +39,8 @@ const CATEGORY_STYLES: Record<string, string[]> = {
 };
 const CATEGORIES = Object.keys(CATEGORY_STYLES);
 
+const PAGE_SIZE = 48;
+
 interface ProductSize {
   length?: number; width?: number; unit?: string;
 }
@@ -138,6 +140,7 @@ function ProductCard({ p }: { p: Product }) {
         {showImg ? (
           <img
             src={embed!} alt={p.designNumber}
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
             onError={() => setImgFailed(true)}
             referrerPolicy="no-referrer"
@@ -242,26 +245,54 @@ function CustomSelect({ value, onChange, options, placeholder }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
-  const [products, setProducts]           = useState<Product[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState<string | null>(null);
-  const [search, setSearch]               = useState('');
-  const [statusFilter, setStatusFilter]   = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [styleFilter, setStyleFilter]     = useState('');
-  const [sortBy, setSortBy]               = useState<SortBy>('newest');
-  const [drawerOpen, setDrawerOpen]       = useState(false);
+  const [products, setProducts]               = useState<Product[]>([]);
+  const [total, setTotal]                     = useState(0);
+  const [page, setPage]                       = useState(1);
+  const [loading, setLoading]                 = useState(true);
+  const [loadingMore, setLoadingMore]         = useState(false);
+  const [error, setError]                     = useState<string | null>(null);
+  const [search, setSearch]                   = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter]       = useState('');
+  const [categoryFilter, setCategoryFilter]   = useState('');
+  const [styleFilter, setStyleFilter]         = useState('');
+  const [sortBy, setSortBy]                   = useState<SortBy>('newest');
+  const [drawerOpen, setDrawerOpen]           = useState(false);
 
-  const fetchProducts = useCallback(() => {
-    setLoading(true);
-    fetch('/api/products?limit=500', { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : r.json().then((e: { message?: string }) => Promise.reject(e.message ?? r.statusText)))
-      .then((data: { products: Product[] }) => setProducts(data.products))
-      .catch((e: unknown) => setError(typeof e === 'string' ? e : 'Failed to connect to the API server.'))
-      .finally(() => setLoading(false));
-  }, []);
+  // Debounce search 300 ms — other filters apply immediately
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  const doFetch = useCallback(async (pageNum: number, append: boolean) => {
+    if (append) setLoadingMore(true);
+    else { setLoading(true); setError(null); }
+
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(pageNum) });
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (statusFilter)   params.set('status',   statusFilter);
+    if (categoryFilter) params.set('category', categoryFilter);
+    if (styleFilter)    params.set('style',    styleFilter);
+    params.set('sort', sortBy);
+
+    try {
+      const res  = await fetch(`/api/products?${params}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? res.statusText);
+      setTotal(data.total);
+      setProducts(prev => append ? [...prev, ...data.products] : data.products);
+      setPage(pageNum);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to connect to the API server.');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [debouncedSearch, statusFilter, categoryFilter, styleFilter, sortBy]);
+
+  // Refetch page 1 whenever filters change (doFetch reference changes with deps)
+  useEffect(() => { doFetch(1, false); }, [doFetch]);
 
   const styleOptions = useMemo(() => {
     if (categoryFilter) return CATEGORY_STYLES[categoryFilter] ?? [];
@@ -273,25 +304,17 @@ export default function ProductsPage() {
     setCategoryFilter(val);
     if (val && styleFilter) { const styles = CATEGORY_STYLES[val] ?? []; if (!styles.includes(styleFilter)) setStyleFilter(''); }
   }
-  function clearAll() { setSearch(''); setStatusFilter(''); setCategoryFilter(''); setStyleFilter(''); setSortBy('newest'); }
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = products.filter(p => {
-      const matchSearch = !q || p.designNumber.toLowerCase().includes(q) || (p.category?.toLowerCase().includes(q) ?? false) || (p.style?.toLowerCase().includes(q) ?? false);
-      return matchSearch && (!statusFilter || p.status === statusFilter) && (!categoryFilter || p.category === categoryFilter) && (!styleFilter || p.style === styleFilter);
-    });
-    return [...list].sort((a, b) => {
-      switch (sortBy) {
-        case 'oldest': return new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime();
-        case 'az':     return a.designNumber.localeCompare(b.designNumber);
-        case 'za':     return b.designNumber.localeCompare(a.designNumber);
-        default:       return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
-      }
-    });
-  }, [products, search, statusFilter, categoryFilter, styleFilter, sortBy]);
+  function clearAll() {
+    setSearch('');
+    setDebouncedSearch('');
+    setStatusFilter('');
+    setCategoryFilter('');
+    setStyleFilter('');
+    setSortBy('newest');
+  }
 
   const hasFilters = !!(search || statusFilter || categoryFilter || styleFilter || sortBy !== 'newest');
+  const hasMore    = products.length < total;
 
   return (
     <>
@@ -355,7 +378,9 @@ export default function ProductsPage() {
         {/* ── Count ──────────────────────────────────────────────────── */}
         {!loading && !error && (
           <p className="text-xs text-[#6b6560] mb-5">
-            {hasFilters ? `${filtered.length} of ${products.length} products` : `${products.length} product${products.length !== 1 ? 's' : ''}`}
+            {hasMore
+              ? `Showing ${products.length} of ${total} product${total !== 1 ? 's' : ''}`
+              : `${total} product${total !== 1 ? 's' : ''}`}
           </p>
         )}
 
@@ -372,7 +397,7 @@ export default function ProductsPage() {
         )}
 
         {/* ── Empty state ─────────────────────────────────────────────── */}
-        {!loading && !error && filtered.length === 0 && (
+        {!loading && !error && products.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-[#6b6560] gap-1">
             <p className="text-sm font-medium">{hasFilters ? 'No products match your filters.' : 'No products yet.'}</p>
             {hasFilters ? (
@@ -384,15 +409,32 @@ export default function ProductsPage() {
         )}
 
         {/* ── Grid ────────────────────────────────────────────────────── */}
-        {!loading && !error && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map(p => <ProductCard key={p._id} p={p} />)}
-          </div>
+        {!loading && !error && products.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {products.map(p => <ProductCard key={p._id} p={p} />)}
+            </div>
+
+            {hasMore && (
+              <div className="flex justify-center mt-8 mb-4">
+                <button
+                  onClick={() => doFetch(page + 1, true)}
+                  disabled={loadingMore}
+                  className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-brand border border-brand/30 rounded-lg hover:bg-brand/5 disabled:opacity-60 transition-colors"
+                >
+                  {loadingMore && (
+                    <span className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {loadingMore ? 'Loading…' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </>
         )}
 
       </div>
 
-      <AddProductDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} onSuccess={fetchProducts} />
+      <AddProductDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} onSuccess={() => doFetch(1, false)} />
     </>
   );
 }

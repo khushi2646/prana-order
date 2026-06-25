@@ -13,8 +13,10 @@ export async function GET(request: NextRequest) {
     const search   = searchParams.get('search')   ?? '';
     const category = searchParams.get('category') ?? '';
     const status   = searchParams.get('status')   ?? '';
+    const style    = searchParams.get('style')    ?? '';
+    const sort     = searchParams.get('sort')     ?? 'newest';
     const page     = parseInt(searchParams.get('page')  ?? '1',  10);
-    const limit    = parseInt(searchParams.get('limit') ?? '20', 10);
+    const limit    = parseInt(searchParams.get('limit') ?? '48', 10);
 
     const query: Record<string, unknown> = {};
 
@@ -28,13 +30,22 @@ export async function GET(request: NextRequest) {
     }
     if (category) query.category = category;
     if (status)   query.status   = status;
+    if (style)    query.style    = style;
+
+    const sortMap: Record<string, Record<string, number>> = {
+      newest: { createdAt: -1 },
+      oldest: { createdAt:  1 },
+      az:     { designNumber:  1 },
+      za:     { designNumber: -1 },
+    };
+    const sortOrder = sortMap[sort] ?? { createdAt: -1 };
 
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
       Product.find(query)
         .select('-changelog -stoneLines -versions')
-        .sort({ designNumber: 1 })
+        .sort(sortOrder)
         .skip(skip)
         .limit(limit),
       Product.countDocuments(query),

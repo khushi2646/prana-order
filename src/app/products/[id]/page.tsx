@@ -1374,8 +1374,35 @@ async function submitVersion(draft: VersionDraft) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-7 h-7 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+      <div className="p-8 space-y-5 max-w-6xl animate-pulse">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="h-4 w-20 bg-[#f0ebe3] rounded" />
+          <div className="h-8 w-52 bg-[#f0ebe3] rounded-lg" />
+          <div className="h-6 w-28 bg-[#f0ebe3] rounded-full" />
+        </div>
+        {/* Tab bar */}
+        <div className="flex gap-1">
+          <div className="h-8 w-10 bg-[#f0ebe3] rounded-lg" />
+          <div className="h-8 w-28 bg-[#f0ebe3] rounded-lg" />
+        </div>
+        {/* Two-column body */}
+        <div className="flex flex-col lg:flex-row gap-5">
+          <div className="lg:w-[40%] h-96 bg-[#f0ebe3] rounded-xl" />
+          <div className="lg:w-[60%] bg-white rounded-xl border border-[#e8e0d4] p-5 space-y-0">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-3 border-b border-[#f8f5f0]">
+                <div className="h-3 w-32 bg-[#f0ebe3] rounded shrink-0" />
+                <div className="h-3 flex-1 bg-[#f0ebe3] rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Stone lines */}
+        <div className="bg-white rounded-xl border border-[#e8e0d4] p-6 space-y-3">
+          <div className="h-4 w-24 bg-[#f0ebe3] rounded" />
+          <div className="h-28 bg-[#f0ebe3] rounded-lg" />
+        </div>
       </div>
     );
   }
