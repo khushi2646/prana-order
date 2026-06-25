@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AddProductToOrderDrawer from '@/components/orders/AddProductDrawer';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -193,12 +194,15 @@ function ProductCard({ product, index, orderId, onRefresh }: {
   orderId:   string;
   onRefresh: () => void;
 }) {
+  const cardRouter = useRouter();
   const [editing, setEditing]       = useState(false);
   const [editForm, setEditForm]     = useState<EditProductForm>(() => productToEditForm(product));
   const [stageSaving, setStageSaving] = useState(false);
   const [saving, setSaving]         = useState(false);
   const [removing, setRemoving]     = useState(false);
   const [editError, setEditError]   = useState<string | null>(null);
+
+  const isIncomplete = product.isNewProduct && !product.productRef;
 
   function setEF<K extends keyof EditProductForm>(key: K, val: EditProductForm[K]) {
     setEditForm(prev => ({ ...prev, [key]: val }));
@@ -421,6 +425,20 @@ function ProductCard({ product, index, orderId, onRefresh }: {
           </button>
         </div>
       </div>
+
+      {/* Incomplete warning */}
+      {isIncomplete && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 space-y-1.5">
+          <p className="text-sm text-yellow-800">⚠️ Product details incomplete — not yet added to catalogue</p>
+          <button
+            type="button"
+            onClick={() => cardRouter.push(`/products/new?fromOrder=${orderId}&productCode=${encodeURIComponent(product.productCode)}`)}
+            className="text-sm text-[#456158] underline"
+          >
+            Complete Product Details →
+          </button>
+        </div>
+      )}
 
       {/* Stage selector */}
       <div className="flex gap-1 flex-wrap">
@@ -796,6 +814,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               Add Product
             </button>
           </div>
+
+          {order.products.some(p => p.isNewProduct && !p.productRef) && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mb-4">
+              <p className="text-sm text-yellow-800">⚠️ Some products in this order have incomplete details</p>
+            </div>
+          )}
 
           {order.products.length === 0 ? (
             <p className="text-sm text-[#6b6560]">No products added yet.</p>
