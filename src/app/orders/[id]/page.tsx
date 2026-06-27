@@ -193,13 +193,14 @@ function ToggleRow({ options, value, onChange }: {
 
 // ── Product card ──────────────────────────────────────────────────────────────
 
-function ProductCard({ product, index, orderId, onRefresh, cadImageUrl }: {
-  product:      OrderProduct;
-  index:        number;
-  orderId:      string;
-  onRefresh:    () => void;
-  cadImageUrl?: string;
+function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
+  product:   OrderProduct;
+  index:     number;
+  orderId:   string;
+  onRefresh: () => void;
+  cadEntry?: { cadImageUrl: string; category: string; style: string };
 }) {
+  const thumbUrl = cadEntry?.cadImageUrl ?? '';
   const cardRouter = useRouter();
   const [editing, setEditing]       = useState(false);
   const [editForm, setEditForm]     = useState<EditProductForm>(() => productToEditForm(product));
@@ -412,33 +413,44 @@ function ProductCard({ product, index, orderId, onRefresh, cadImageUrl }: {
   // ── Read-only card ──────────────────────────────────────────────────────────
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-5 space-y-3 relative${cadImageUrl ? ' pr-28' : ''}`}>
-      {cadImageUrl && (
+    <div className={`bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-5 pb-10 space-y-3 relative min-h-32${thumbUrl ? ' pr-28' : ''}`}>
+      {thumbUrl && (
         <img
-          src={gdriveThumbnail(cadImageUrl)}
+          src={gdriveThumbnail(thumbUrl)}
           alt=""
           className="absolute top-4 right-4 w-24 h-24 rounded-lg object-cover border border-[#f0ebe3]"
           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
       )}
+      {/* Edit / Remove — absolute bottom-right */}
+      <div className="absolute bottom-4 right-4 flex gap-3">
+        <button type="button" onClick={() => { setEditForm(productToEditForm(product)); setEditing(true); }}
+          className="text-xs text-[#456158] font-semibold hover:underline">Edit</button>
+        <button type="button" onClick={removeProduct} disabled={removing}
+          className="text-xs text-red-500 font-semibold hover:underline disabled:opacity-50">
+          {removing ? 'Removing…' : 'Remove'}
+        </button>
+      </div>
       {/* Top row */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-bold text-[#1a1a1a]">{product.productCode}</span>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[product.goldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
-          {product.goldColour}
-        </span>
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8] uppercase">
-          {product.goldCarat}
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={() => { setEditForm(productToEditForm(product)); setEditing(true); }}
-            className="text-xs text-[#456158] font-semibold hover:underline">Edit</button>
-          <button type="button" onClick={removeProduct} disabled={removing}
-            className="text-xs text-red-500 font-semibold hover:underline disabled:opacity-50">
-            {removing ? 'Removing…' : 'Remove'}
-          </button>
-        </div>
+        {product.goldColour && (
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[product.goldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
+            {product.goldColour}
+          </span>
+        )}
+        {product.goldCarat && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8] uppercase">
+            {product.goldCarat}
+          </span>
+        )}
       </div>
+      {/* Category · Style */}
+      {cadEntry && (cadEntry.category || cadEntry.style) && (
+        <p className="text-sm text-[#6b6560]">
+          {[cadEntry.category, cadEntry.style].filter(Boolean).join(' · ')}
+        </p>
+      )}
 
       {/* Incomplete warning */}
       {isIncomplete && (
@@ -502,8 +514,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   // Add product drawer
   const [drawerOpen, setDrawerOpen]   = useState(false);
 
-  // CAD image map: productRef → cadImageUrl
-  const [cadMap, setCadMap] = useState<Record<string, string>>({});
+  // CAD map: productRef → { cadImageUrl, category, style }
+  const [cadMap, setCadMap] = useState<Record<string, { cadImageUrl: string; category: string; style: string }>>({});
 
   // Delete order
   const [deleting, setDeleting]       = useState(false);
@@ -538,9 +550,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           .catch(() => null)
       )
     ).then(results => {
-      const map: Record<string, string> = {};
+      const map: Record<string, { cadImageUrl: string; category: string; style: string }> = {};
       refs.forEach((ref, i) => {
-        if (results[i]?.cadImageUrl) map[ref] = results[i].cadImageUrl;
+        if (results[i]) {
+          map[ref] = {
+            cadImageUrl: results[i].cadImageUrl ?? '',
+            category:    results[i].category    ?? '',
+            style:       results[i].style        ?? '',
+          };
+        }
       });
       setCadMap(map);
     });
@@ -875,7 +893,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   index={i}
                   orderId={id}
                   onRefresh={fetchOrder}
-                  cadImageUrl={product.productRef ? (cadMap[product.productRef] ?? '') : ''}
+                  cadEntry={product.productRef ? cadMap[product.productRef] : undefined}
                 />
               ))}
             </div>
