@@ -137,6 +137,11 @@ function fmtDate(iso?: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function gdriveThumbnail(url: string): string {
+  const m = url.match(/\/d\/([^/]+)/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[1]}` : '';
+}
+
 const inp = 'w-full px-3 py-2 text-sm bg-white border border-[#ddd5c8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a]';
 
 // ── Diamond summary ───────────────────────────────────────────────────────────
@@ -188,11 +193,12 @@ function ToggleRow({ options, value, onChange }: {
 
 // ── Product card ──────────────────────────────────────────────────────────────
 
-function ProductCard({ product, index, orderId, onRefresh }: {
-  product:   OrderProduct;
-  index:     number;
-  orderId:   string;
-  onRefresh: () => void;
+function ProductCard({ product, index, orderId, onRefresh, cadImageUrl }: {
+  product:      OrderProduct;
+  index:        number;
+  orderId:      string;
+  onRefresh:    () => void;
+  cadImageUrl?: string;
 }) {
   const cardRouter = useRouter();
   const [editing, setEditing]       = useState(false);
@@ -406,7 +412,15 @@ function ProductCard({ product, index, orderId, onRefresh }: {
   // ── Read-only card ──────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-5 space-y-3">
+    <div className={`bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-5 space-y-3 relative${cadImageUrl ? ' pr-24' : ''}`}>
+      {cadImageUrl && (
+        <img
+          src={gdriveThumbnail(cadImageUrl)}
+          alt=""
+          className="absolute top-4 right-4 w-16 h-16 rounded-lg object-cover border border-[#f0ebe3]"
+          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+      )}
       {/* Top row */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-bold text-[#1a1a1a]">{product.productCode}</span>
@@ -494,7 +508,8 @@ function ProductCard({ product, index, orderId, onRefresh }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const { id }    = use(params);
+  const router    = useRouter();
 
   const [order, setOrder]             = useState<Order | null>(null);
   const [loading, setLoading]         = useState(true);
@@ -515,6 +530,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   // Add product drawer
   const [drawerOpen, setDrawerOpen]   = useState(false);
 
+  // CAD image map: productRef → cadImageUrl
+  const [cadMap, setCadMap] = useState<Record<string, string>>({});
+
+  // Delete order
+  const [deleting, setDeleting]       = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const fetchOrder = useCallback(async () => {
     try {
       const res = await fetch(`/api/orders/${id}`, { cache: 'no-store' });
@@ -529,6 +551,45 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }, [id]);
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
+
+  // Populate cadMap whenever order changes
+  useEffect(() => {
+    if (!order) return;
+    const refs = order.products
+      .map(p => p.productRef)
+      .filter((ref): ref is string => !!ref);
+    if (!refs.length) { setCadMap({}); return; }
+    Promise.all(
+      refs.map(ref =>
+        fetch(`/api/products/${ref}`, { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      )
+    ).then(results => {
+      const map: Record<string, string> = {};
+      refs.forEach((ref, i) => {
+        if (results[i]?.cadImageUrl) map[ref] = results[i].cadImageUrl;
+      });
+      setCadMap(map);
+    });
+  }, [order]);
+
+  async function handleDeleteOrder() {
+    if (!confirm('Delete this order? This cannot be undone.')) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(data.message ?? 'Failed to delete order');
+      }
+      router.push('/orders');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete order');
+      setDeleting(false);
+    }
+  }
 
   // ── Header edit ─────────────────────────────────────────────────────────────
 
@@ -641,12 +702,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
           {!editing && (
-            <button onClick={startEditing}
-              className="px-4 py-2 text-sm font-semibold bg-white border border-[#ddd5c8] text-[#1a1a1a] rounded-lg hover:bg-[#f0ebe3] transition-colors shadow-sm shrink-0">
-              Edit
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={handleDeleteOrder} disabled={deleting}
+                className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
+                {deleting ? 'Deleting…' : 'Delete Order'}
+              </button>
+              <button onClick={startEditing}
+                className="px-4 py-2 text-sm font-semibold bg-white border border-[#ddd5c8] text-[#1a1a1a] rounded-lg hover:bg-[#f0ebe3] transition-colors shadow-sm">
+                Edit
+              </button>
+            </div>
           )}
         </div>
+
+        {deleteError && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-2">{deleteError}</p>
+        )}
 
         {/* Pills row */}
         {!editing && (
@@ -832,6 +903,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   index={i}
                   orderId={id}
                   onRefresh={fetchOrder}
+                  cadImageUrl={product.productRef ? (cadMap[product.productRef] ?? '') : ''}
                 />
               ))}
             </div>

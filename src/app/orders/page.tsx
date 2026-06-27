@@ -180,6 +180,9 @@ export default function OrdersPage() {
   const [loading, setLoading]       = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Search
+  const [search, setSearch] = useState('');
+
   // Filters
   const [typeFilter, setTypeFilter]       = useState('');
   const [urgencyFilter, setUrgencyFilter] = useState('');
@@ -203,9 +206,17 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, []);
 
-  // Client-side filtering
+  // Client-side filtering (search + filters combined)
   const filtered = useMemo(() => {
     return orders.filter(o => {
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        if (
+          !o.orderId.toLowerCase().includes(q) &&
+          !o.customerName.toLowerCase().includes(q) &&
+          !(o.phoneNumber ?? '').toLowerCase().includes(q)
+        ) return false;
+      }
       if (typeFilter && o.orderType !== typeFilter) return false;
       if (urgencyFilter === 'urgent' && !o.isUrgent) return false;
 
@@ -222,7 +233,7 @@ export default function OrdersPage() {
       }
       return true;
     });
-  }, [orders, typeFilter, urgencyFilter, orderFrom, orderTo, deliveryFrom, deliveryTo]);
+  }, [orders, search, typeFilter, urgencyFilter, orderFrom, orderTo, deliveryFrom, deliveryTo]);
 
   return (
     <>
@@ -239,6 +250,15 @@ export default function OrdersPage() {
             New Order
           </button>
         </div>
+
+        {/* ── Search ────────────────────────────────────────────────────── */}
+        <input
+          type="text"
+          className="w-full rounded-xl border border-[#ddd5c8] px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a] mb-4"
+          placeholder="Search by order number, customer name or phone…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
 
         {/* ── Filter bar ────────────────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-4 mb-6 flex flex-wrap gap-4 items-center">
