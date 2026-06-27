@@ -434,6 +434,14 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
       {/* Top row */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-bold text-[#1a1a1a]">{product.productCode}</span>
+        {cadEntry && (cadEntry.category || cadEntry.style) && (
+          <>
+            <span className="text-[#ddd5c8]">·</span>
+            <span className="text-sm text-[#6b6560]">
+              {[cadEntry.category, cadEntry.style].filter(Boolean).join(' · ')}
+            </span>
+          </>
+        )}
         {product.goldColour && (
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[product.goldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
             {product.goldColour}
@@ -445,12 +453,6 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
           </span>
         )}
       </div>
-      {/* Category · Style */}
-      {cadEntry && (cadEntry.category || cadEntry.style) && (
-        <p className="text-sm text-[#6b6560]">
-          {[cadEntry.category, cadEntry.style].filter(Boolean).join(' · ')}
-        </p>
-      )}
 
       {/* Incomplete warning */}
       {isIncomplete && (
