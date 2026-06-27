@@ -412,12 +412,12 @@ function ProductCard({ product, index, orderId, onRefresh, cadImageUrl }: {
   // ── Read-only card ──────────────────────────────────────────────────────────
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-5 space-y-3 relative${cadImageUrl ? ' pr-24' : ''}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-5 space-y-3 relative${cadImageUrl ? ' pr-28' : ''}`}>
       {cadImageUrl && (
         <img
           src={gdriveThumbnail(cadImageUrl)}
           alt=""
-          className="absolute top-4 right-4 w-16 h-16 rounded-lg object-cover border border-[#f0ebe3]"
+          className="absolute top-4 right-4 w-24 h-24 rounded-lg object-cover border border-[#f0ebe3]"
           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
       )}
@@ -471,34 +471,6 @@ function ProductCard({ product, index, orderId, onRefresh, cadImageUrl }: {
         <span><span className="text-xs text-[#6b6560] mr-1">Qty</span>{product.quantity}</span>
         {product.findings && <span><span className="text-xs text-[#6b6560] mr-1">Findings</span>{product.findings}</span>}
       </div>
-
-      {/* Stone lines */}
-      {product.stoneLines?.length > 0 && (
-        <div className="rounded-lg border border-[#e8e0d4] overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-[#f8f5f0] text-[#6b6560]">
-                <th className="px-3 py-1.5 text-left font-semibold">Shape</th>
-                <th className="px-3 py-1.5 text-left font-semibold">Size</th>
-                <th className="px-3 py-1.5 text-left font-semibold">Colour</th>
-                <th className="px-3 py-1.5 text-right font-semibold">Per Unit</th>
-                <th className="px-3 py-1.5 text-right font-semibold">Total Pcs</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f0ebe3]">
-              {product.stoneLines.map((sl, i) => (
-                <tr key={i}>
-                  <td className="px-3 py-1.5">{sl.shape || '—'}</td>
-                  <td className="px-3 py-1.5">{sl.size  || '—'}</td>
-                  <td className="px-3 py-1.5">{sl.colour || '—'}</td>
-                  <td className="px-3 py-1.5 text-right">{sl.piecesPerUnit ?? '—'}</td>
-                  <td className="px-3 py-1.5 text-right font-semibold text-[#456158]">{sl.totalPieces ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {product.remarks && <p className="text-xs text-[#6b6560] italic">{product.remarks}</p>}
     </div>
