@@ -28,8 +28,6 @@ interface LocalStoneLine {
 }
 
 type Stage       = 'cad' | 'diamond_procurement' | 'manufacturing' | 'order_received';
-type GoldColour  = 'yellow' | 'white' | 'rose';
-type GoldCarat   = '9kt' | '14kt' | '18kt';
 type VersionMode = 'base' | 'existing' | 'new';
 
 interface FormState {
@@ -37,8 +35,6 @@ interface FormState {
   isNewProduct:          boolean;
   newProductDescription: string;
   quantity:              string;
-  goldColour:            GoldColour | '';
-  goldCarat:             GoldCarat  | '';
   findings:              string;
   stoneLines:            LocalStoneLine[];
   stage:                 Stage;
@@ -49,8 +45,7 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   productCode: '', isNewProduct: false, newProductDescription: '',
-  quantity: '1', goldColour: '', goldCarat: '',
-  findings: '', stoneLines: [], stage: 'cad', remarks: '',
+  quantity: '1', findings: '', stoneLines: [], stage: 'cad', remarks: '',
 };
 
 const EMPTY_SL: LocalStoneLine = { shape: '', size: '', colour: 'WHITE', piecesPerUnit: '' };
@@ -61,14 +56,6 @@ const STAGES: { value: Stage; label: string }[] = [
   { value: 'manufacturing',       label: 'Manufacturing' },
   { value: 'order_received',      label: 'Received'      },
 ];
-
-const GOLD_COLOURS: { value: GoldColour; label: string }[] = [
-  { value: 'yellow', label: 'Yellow' },
-  { value: 'white',  label: 'White'  },
-  { value: 'rose',   label: 'Rose'   },
-];
-
-const GOLD_CARATS: GoldCarat[] = ['9kt', '14kt', '18kt'];
 
 const inp = 'w-full px-3 py-2 text-sm bg-white border border-[#ddd5c8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a]';
 const slabel = 'block text-xs font-semibold text-[#6b6560] uppercase tracking-wider';
@@ -300,8 +287,6 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
   function validate(): string | null {
     if (!form.productCode.trim()) return 'Product Code is required.';
     if (qty < 1)                  return 'Quantity must be at least 1.';
-    if (!form.goldColour)         return 'Gold Colour is required.';
-    if (!form.goldCarat)          return 'Gold Carat is required.';
     return null;
   }
 
@@ -317,8 +302,6 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
         productCode:  autoNumber || form.productCode,
         isNewProduct: true,
         quantity:     qty,
-        goldColour:   form.goldColour,
-        goldCarat:    form.goldCarat,
         stage:        'cad',
         stoneLines:   [],
       };
@@ -354,8 +337,6 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
         productCode:  autoNumber || form.productCode,
         isNewProduct: true,
         quantity:     qty,
-        goldColour:   form.goldColour,
-        goldCarat:    form.goldCarat,
         stage:        'cad',
         stoneLines:   [],
       };
@@ -422,8 +403,6 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
         productCode:  form.productCode.trim(),
         isNewProduct: form.isNewProduct,
         quantity:     qty,
-        goldColour:   form.goldColour,
-        goldCarat:    form.goldCarat,
         stage:        form.stage,
         stoneLines:   finalStoneLines.map(sl => ({
           shape:        sl.shape  || undefined,
@@ -627,32 +606,6 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
             <label className={slabel}>Quantity <span className="text-red-500">*</span></label>
             <input className={inp} type="number" min={1} placeholder="1"
               value={form.quantity} onChange={e => set('quantity', e.target.value)} />
-          </div>
-
-          {/* ── Gold Colour ──────────────────────────────────────────── */}
-          <div className="space-y-1.5">
-            <label className={slabel}>Gold Colour <span className="text-red-500">*</span></label>
-            <div className="flex rounded-lg border border-[#ddd5c8] overflow-hidden">
-              {GOLD_COLOURS.map(c => (
-                <button key={c.value} type="button" onClick={() => set('goldColour', c.value)}
-                  className={`flex-1 py-2 text-sm font-medium transition-colors ${form.goldColour === c.value ? 'bg-[#456158] text-white' : 'bg-white text-[#6b6560] hover:bg-[#f0ebe3]'}`}>
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Gold Carat ───────────────────────────────────────────── */}
-          <div className="space-y-1.5">
-            <label className={slabel}>Gold Carat <span className="text-red-500">*</span></label>
-            <div className="flex rounded-lg border border-[#ddd5c8] overflow-hidden">
-              {GOLD_CARATS.map(c => (
-                <button key={c} type="button" onClick={() => set('goldCarat', c)}
-                  className={`flex-1 py-2 text-sm font-medium uppercase transition-colors ${form.goldCarat === c ? 'bg-[#456158] text-white' : 'bg-white text-[#6b6560] hover:bg-[#f0ebe3]'}`}>
-                  {c}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* ── Findings (hidden in new-product mode) ───────────────── */}
