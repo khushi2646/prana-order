@@ -47,6 +47,15 @@ function ChartBarIcon({ className }: { className?: string }) {
   );
 }
 
+function CogIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
 const NAV = [
   { href: '/products',    label: 'Products',    Icon: CubeIcon           },
   { href: '/orders',      label: 'Orders',      Icon: ClipboardIcon      },
@@ -65,25 +74,46 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-0.5">
+      <nav className="flex-1 p-3 flex flex-col">
         <p className="px-3 pt-2 pb-1.5 text-[9px] font-bold tracking-[0.18em] uppercase text-[#f5f0e8]/25">Menu</p>
-        {NAV.map(({ href, label, Icon }) => {
-          const active = pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-brand text-[#f5f0e8] shadow-sm'
-                  : 'text-[#f5f0e8]/55 hover:text-[#f5f0e8] hover:bg-white/[0.08]'
-              }`}
-            >
-              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'opacity-100' : 'opacity-70'}`} />
-              {label}
-            </Link>
-          );
-        })}
+        <div className="space-y-0.5">
+          {NAV.map(({ href, label, Icon }) => {
+            const active = pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-brand text-[#f5f0e8] shadow-sm'
+                    : 'text-[#f5f0e8]/55 hover:text-[#f5f0e8] hover:bg-white/[0.08]'
+                }`}
+              >
+                <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'opacity-100' : 'opacity-70'}`} />
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+        {/* Settings — pinned to bottom */}
+        <div className="mt-auto border-t border-[#2a2a2a] pt-4">
+          {(() => {
+            const active = pathname.startsWith('/settings');
+            return (
+              <Link
+                href="/settings"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-brand text-[#f5f0e8] shadow-sm'
+                    : 'text-[#f5f0e8]/55 hover:text-[#f5f0e8] hover:bg-white/[0.08]'
+                }`}
+              >
+                <CogIcon className={`w-5 h-5 flex-shrink-0 ${active ? 'opacity-100' : 'opacity-70'}`} />
+                Settings
+              </Link>
+            );
+          })()}
+        </div>
       </nav>
 
       {/* Footer */}
