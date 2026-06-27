@@ -16,9 +16,9 @@ export async function POST(request: NextRequest, { params }: Ctx) {
 
     const body = await request.json() as Record<string, unknown>;
 
-    if (!body.productCode || body.quantity == null || !body.goldColour || !body.goldCarat) {
+    if (!body.productCode || body.quantity == null) {
       return NextResponse.json(
-        { message: 'productCode, quantity, goldColour, and goldCarat are required' },
+        { message: 'productCode and quantity are required' },
         { status: 400 },
       );
     }
