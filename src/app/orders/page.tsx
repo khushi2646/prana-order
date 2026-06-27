@@ -6,11 +6,28 @@ import NewOrderDrawer from '@/components/orders/NewOrderDrawer';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Stage = 'cad' | 'diamond_procurement' | 'manufacturing' | 'order_received';
+type Stage     = 'cad' | 'diamond_procurement' | 'manufacturing' | 'order_received';
+type ActiveTab = 'orders' | 'products';
 
 interface OrderProduct {
-  productCode: string;
-  stage:       Stage;
+  productCode:   string;
+  stage:         Stage;
+  quantity?:     number;
+  goldColour?:   string;
+  goldCarat?:    string;
+  productRef?:   string | null;
+  isNewProduct?: boolean;
+  stoneLines?:   unknown[];
+  findings?:     string;
+  remarks?:      string;
+}
+
+interface FlatProduct extends OrderProduct {
+  orderMongoId: string;
+  orderId:      string;
+  customerName: string;
+  isUrgent:     boolean;
+  orderType:    'stock' | 'customer';
 }
 
 interface FollowUp {
@@ -41,6 +58,13 @@ const STAGE_LABEL: Record<Stage, string> = {
   order_received:      'Received',
 };
 
+const STAGE_BADGE: Record<Stage, string> = {
+  cad:                 'bg-purple-100 text-purple-700',
+  diamond_procurement: 'bg-blue-100 text-blue-700',
+  manufacturing:       'bg-amber-100 text-amber-700',
+  order_received:      'bg-green-100 text-green-700',
+};
+
 function stageSummary(products: OrderProduct[]): string {
   if (!products.length) return 'No products';
   const counts: Partial<Record<Stage, number>> = {};
@@ -60,6 +84,11 @@ function fmtDate(iso?: string): string {
 function dateStr(iso?: string): string {
   if (!iso) return '';
   return new Date(iso).toISOString().slice(0, 10);
+}
+
+function gdriveThumbnail(url: string): string {
+  const m = url.match(/\/d\/([^/]+)/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[1]}` : '';
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -126,12 +155,76 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
   );
 }
 
+// ── Product card (Products tab) ───────────────────────────────────────────────
+
+function FlatProductCard({ product, cadImageUrl, onClick }: {
+  product:     FlatProduct;
+  cadImageUrl: string;
+  onClick:     () => void;
+}) {
+  const thumbUrl    = cadImageUrl ? gdriveThumbnail(cadImageUrl) : '';
+  const isIncomplete = product.isNewProduct && !product.productRef;
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl shadow-sm p-4 border border-[#e8e0d4] cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+    >
+      <div className="flex gap-3">
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-1.5">
+          {/* Top row: code + stage badge + qty */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-[#1a1a1a]">{product.productCode}</span>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STAGE_BADGE[product.stage] ?? 'bg-gray-100 text-gray-600'}`}>
+              {STAGE_LABEL[product.stage]}
+            </span>
+            {product.quantity != null && (
+              <span className="text-xs text-[#6b6560]">× {product.quantity}</span>
+            )}
+          </div>
+
+          {/* Parent order link */}
+          <p className="text-sm text-[#456158] underline truncate">
+            {product.orderId} · {product.customerName}
+          </p>
+
+          {/* Urgent */}
+          {product.isUrgent && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+              Urgent
+            </span>
+          )}
+
+          {/* Incomplete warning */}
+          {isIncomplete && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1.5">
+              <p className="text-xs text-yellow-800">⚠️ Product details incomplete</p>
+            </div>
+          )}
+        </div>
+
+        {/* CAD thumbnail */}
+        {thumbUrl && (
+          <img
+            src={thumbUrl}
+            alt=""
+            className="w-14 h-14 rounded-lg object-cover border border-[#f0ebe3] shrink-0 self-start"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Toggle button group ───────────────────────────────────────────────────────
 
 function FilterToggle({ options, value, onChange }: {
   options: { label: string; value: string }[];
-  value: string;
-  onChange: (v: string) => void;
+  value:   string;
+  onChange:(v: string) => void;
 }) {
   return (
     <div className="flex rounded-lg border border-[#ddd5c8] overflow-hidden">
@@ -179,6 +272,8 @@ export default function OrdersPage() {
   const [orders, setOrders]         = useState<Order[]>([]);
   const [loading, setLoading]       = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab]   = useState<ActiveTab>('orders');
+  const [cadMap, setCadMap]         = useState<Record<string, string>>({});
 
   // Search
   const [search, setSearch] = useState('');
@@ -206,7 +301,44 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, []);
 
-  // Client-side filtering (search + filters combined)
+  // Fetch CAD images for all unique productRefs across all orders
+  useEffect(() => {
+    const refs = [...new Set(
+      orders.flatMap(o =>
+        o.products.map(p => p.productRef).filter((r): r is string => !!r)
+      )
+    )];
+    if (!refs.length) { setCadMap({}); return; }
+    Promise.all(
+      refs.map(ref =>
+        fetch(`/api/products/${ref}`, { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      )
+    ).then(results => {
+      const map: Record<string, string> = {};
+      refs.forEach((ref, i) => {
+        if (results[i]?.cadImageUrl) map[ref] = results[i].cadImageUrl;
+      });
+      setCadMap(map);
+    });
+  }, [orders]);
+
+  // Flat products list derived from orders
+  const allProducts = useMemo<FlatProduct[]>(() =>
+    orders.flatMap(o =>
+      o.products.map(p => ({
+        ...p,
+        orderMongoId: o._id,
+        orderId:      o.orderId,
+        customerName: o.customerName,
+        isUrgent:     o.isUrgent,
+        orderType:    o.orderType,
+      }))
+    ),
+  [orders]);
+
+  // Orders tab filtering
   const filtered = useMemo(() => {
     return orders.filter(o => {
       if (search.trim()) {
@@ -235,12 +367,29 @@ export default function OrdersPage() {
     });
   }, [orders, search, typeFilter, urgencyFilter, orderFrom, orderTo, deliveryFrom, deliveryTo]);
 
+  // Products tab filtering
+  const filteredProducts = useMemo(() => {
+    return allProducts.filter(p => {
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        if (
+          !p.productCode.toLowerCase().includes(q) &&
+          !p.orderId.toLowerCase().includes(q) &&
+          !p.customerName.toLowerCase().includes(q)
+        ) return false;
+      }
+      if (typeFilter && p.orderType !== typeFilter) return false;
+      if (urgencyFilter === 'urgent' && !p.isUrgent) return false;
+      return true;
+    });
+  }, [allProducts, search, typeFilter, urgencyFilter]);
+
   return (
     <>
       <div className="p-8 min-h-screen bg-[#f8f5f0]">
 
         {/* ── Header ────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <h1 className="font-playfair text-3xl font-semibold text-[#1a1a1a]">Orders</h1>
           <button
             onClick={() => setDrawerOpen(true)}
@@ -251,11 +400,33 @@ export default function OrdersPage() {
           </button>
         </div>
 
+        {/* ── Tabs ──────────────────────────────────────────────────────── */}
+        <div className="flex gap-6 border-b border-[#e8e0d4] mb-6">
+          {(['orders', 'products'] as const).map(tab => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`pb-2.5 text-sm transition-colors ${
+                activeTab === tab
+                  ? 'text-[#456158] border-b-2 border-[#456158] font-semibold'
+                  : 'text-[#6b6560] hover:text-[#1a1a1a]'
+              }`}
+            >
+              {tab === 'orders' ? 'Orders' : 'Products'}
+            </button>
+          ))}
+        </div>
+
         {/* ── Search ────────────────────────────────────────────────────── */}
         <input
           type="text"
           className="w-full rounded-xl border border-[#ddd5c8] px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a] mb-4"
-          placeholder="Search by order number, customer name or phone…"
+          placeholder={
+            activeTab === 'orders'
+              ? 'Search by order number, customer name or phone…'
+              : 'Search by product code, order number or customer name…'
+          }
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -272,33 +443,54 @@ export default function OrdersPage() {
             value={urgencyFilter}
             onChange={setUrgencyFilter}
           />
-          <DateRange
-            label="Order Date"
-            from={orderFrom} to={orderTo}
-            onFrom={setOrderFrom} onTo={setOrderTo}
-          />
-          <DateRange
-            label="Delivery Date"
-            from={deliveryFrom} to={deliveryTo}
-            onFrom={setDeliveryFrom} onTo={setDeliveryTo}
-          />
+          {activeTab === 'orders' && (
+            <>
+              <DateRange
+                label="Order Date"
+                from={orderFrom} to={orderTo}
+                onFrom={setOrderFrom} onTo={setOrderTo}
+              />
+              <DateRange
+                label="Delivery Date"
+                from={deliveryFrom} to={deliveryTo}
+                onFrom={setDeliveryFrom} onTo={setDeliveryTo}
+              />
+            </>
+          )}
         </div>
 
         {/* ── Content ───────────────────────────────────────────────────── */}
         {loading ? (
-          <p className="text-center text-[#6b6560] mt-16">Loading orders…</p>
-        ) : filtered.length === 0 ? (
-          <p className="text-center text-[#6b6560] mt-16">No orders found</p>
+          <p className="text-center text-[#6b6560] mt-16">Loading…</p>
+        ) : activeTab === 'orders' ? (
+          filtered.length === 0 ? (
+            <p className="text-center text-[#6b6560] mt-16">No orders found</p>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map(o => (
+                <OrderCard
+                  key={o._id}
+                  order={o}
+                  onClick={() => router.push(`/orders/${o._id}`)}
+                />
+              ))}
+            </div>
+          )
         ) : (
-          <div className="space-y-3">
-            {filtered.map(o => (
-              <OrderCard
-                key={o._id}
-                order={o}
-                onClick={() => router.push(`/orders/${o._id}`)}
-              />
-            ))}
-          </div>
+          filteredProducts.length === 0 ? (
+            <p className="text-center text-[#6b6560] mt-16">No products found</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredProducts.map((p, i) => (
+                <FlatProductCard
+                  key={`${p.orderMongoId}-${i}`}
+                  product={p}
+                  cadImageUrl={p.productRef ? (cadMap[p.productRef] ?? '') : ''}
+                  onClick={() => router.push(`/orders/${p.orderMongoId}`)}
+                />
+              ))}
+            </div>
+          )
         )}
       </div>
 
