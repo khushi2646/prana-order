@@ -35,6 +35,8 @@ interface FormState {
   isNewProduct:          boolean;
   newProductDescription: string;
   quantity:              string;
+  goldColours:           string[];
+  goldCarat:             string;
   findings:              string;
   stoneLines:            LocalStoneLine[];
   stage:                 Stage;
@@ -45,7 +47,7 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   productCode: '', isNewProduct: false, newProductDescription: '',
-  quantity: '1', findings: '', stoneLines: [], stage: 'cad', remarks: '',
+  quantity: '1', goldColours: [], goldCarat: '', findings: '', stoneLines: [], stage: 'cad', remarks: '',
 };
 
 const EMPTY_SL: LocalStoneLine = { shape: '', size: '', colour: 'WHITE', piecesPerUnit: '' };
@@ -159,6 +161,9 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
   const [form, setForm]   = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [goldColoursErr, setGoldColoursErr] = useState<string | null>(null);
+  const [goldCaratErr, setGoldCaratErr]     = useState<string | null>(null);
 
   // ── Catalogue search ────────────────────────────────────────────────────────
   const [selectedProduct, setSelectedProduct]   = useState<CatalogueProduct | null>(null);
@@ -278,6 +283,8 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
     setCatalogueResults([]);
     setAutoNumber('');
     setError(null);
+    setGoldColoursErr(null);
+    setGoldCaratErr(null);
     resetVersionState();
   }
 
@@ -367,6 +374,11 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
     const err = validate();
     if (err) { setError(err); return; }
 
+    let goldOk = true;
+    if (form.goldColours.length === 0) { setGoldColoursErr('Select at least one gold colour'); goldOk = false; } else setGoldColoursErr(null);
+    if (!form.goldCarat)               { setGoldCaratErr('Select a gold carat');               goldOk = false; } else setGoldCaratErr(null);
+    if (!goldOk) return;
+
     setSaving(true);
     try {
       let finalStoneLines = form.stoneLines;
@@ -414,6 +426,8 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
       };
       if (selectedProduct)                                       body.productRef = selectedProduct._id;
       if (form.isNewProduct && form.newProductDescription.trim()) body.newProductDescription = form.newProductDescription.trim();
+      body.goldColours = form.goldColours;
+      body.goldCarat   = form.goldCarat;
       if (form.findings.trim()) body.findings = form.findings.trim();
       if (form.remarks.trim())  body.remarks  = form.remarks.trim();
 
@@ -606,6 +620,48 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
             <label className={slabel}>Quantity <span className="text-red-500">*</span></label>
             <input className={inp} type="number" min={1} placeholder="1"
               value={form.quantity} onChange={e => set('quantity', e.target.value)} />
+          </div>
+
+          {/* ── Gold Colour ──────────────────────────────────────────── */}
+          <div className="space-y-1.5">
+            <label className={slabel}>Gold Colour <span className="text-red-500">*</span></label>
+            <div className="flex items-center gap-4">
+              {(['Yellow', 'White', 'Rose'] as const).map(c => {
+                const val = c.toLowerCase();
+                return (
+                  <label key={c} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox"
+                      checked={form.goldColours.includes(val)}
+                      onChange={e => {
+                        const next = e.target.checked
+                          ? [...form.goldColours, val]
+                          : form.goldColours.filter(g => g !== val);
+                        set('goldColours', next);
+                        if (next.length > 0) setGoldColoursErr(null);
+                      }}
+                      className="w-4 h-4 rounded accent-[#456158]"
+                    />
+                    <span className="text-sm text-[#1a1a1a]">{c}</span>
+                  </label>
+                );
+              })}
+            </div>
+            {goldColoursErr && <p className="text-xs text-red-500">{goldColoursErr}</p>}
+          </div>
+
+          {/* ── Gold Carat ───────────────────────────────────────────── */}
+          <div className="space-y-1.5">
+            <label className={slabel}>Gold Carat <span className="text-red-500">*</span></label>
+            <div className="flex gap-2">
+              {(['9kt', '14kt', '18kt'] as const).map(k => (
+                <button key={k} type="button"
+                  onClick={() => { set('goldCarat', k); setGoldCaratErr(null); }}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition-colors ${form.goldCarat === k ? 'bg-[#456158] text-white border-[#456158]' : 'border-[#ddd5c8] text-[#6b6560] hover:bg-[#f8f5f0]'}`}>
+                  {k}
+                </button>
+              ))}
+            </div>
+            {goldCaratErr && <p className="text-xs text-red-500">{goldCaratErr}</p>}
           </div>
 
           {/* ── Findings (hidden in new-product mode) ───────────────── */}

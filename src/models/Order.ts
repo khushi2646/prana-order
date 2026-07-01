@@ -20,7 +20,7 @@ const OrderProductSchema = new Schema(
     isNewProduct:        { type: Boolean, default: false },
     newProductDescription: { type: String },
     quantity:            { type: Number, required: true, min: 1 },
-    goldColour:          { type: String, enum: ['yellow', 'white', 'rose'] },
+    goldColours:         { type: [String], default: [] },
     goldCarat:           { type: String, enum: ['9kt', '14kt', '18kt'] },
     findings:            { type: String },
     stoneLines:          [StoneLineSchema],
