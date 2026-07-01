@@ -57,7 +57,7 @@ export interface IProduct extends Document {
   totalColourStoneWeight?: number;
   totalColourstonePcs?: number;
   rhodiumInstruction?: string;
-  status: 'Pending Review' | 'CAD Approved' | 'Needs Manual Check' | 'In Production' | 'Made' | 'Hold' | 'Rejected';
+  status: 'Pending' | 'Needs Manual Check' | 'Hold' | 'Rejected' | 'Approved';
   remarks?: string;
   stoneLines: IStoneLine[];
   versions: IVersion[];
@@ -138,8 +138,8 @@ const ProductSchema = new Schema<IProduct>(
 
     status: {
       type: String,
-      enum: ['Pending Review', 'CAD Approved', 'Needs Manual Check', 'In Production', 'Made', 'Hold', 'Rejected'],
-      default: 'Pending Review',
+      enum: ['Pending', 'Needs Manual Check', 'Hold', 'Rejected', 'Approved'],
+      default: 'Pending',
     },
     remarks: { type: String, trim: true },
 

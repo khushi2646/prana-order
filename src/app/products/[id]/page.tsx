@@ -64,16 +64,14 @@ interface VersionDraft {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_STYLE: Record<string, string> = {
-  'Pending Review':     'bg-amber-50 text-amber-700 border border-amber-200',
-  'CAD Approved':       'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  'Needs Manual Check': 'bg-orange-50 text-orange-700 border border-orange-200',
-  'In Production':      'bg-sky-50 text-sky-700 border border-sky-200',
-  'Made':               'bg-teal-50 text-teal-700 border border-teal-200',
-  'Hold':               'bg-[#f0ebe3] text-[#6b6560] border border-[#ddd5c8]',
+  'Pending':            'bg-gray-100 text-gray-600 border border-gray-200',
+  'Needs Manual Check': 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+  'Hold':               'bg-yellow-50 text-yellow-700 border border-yellow-200',
   'Rejected':           'bg-red-50 text-red-600 border border-red-200',
+  'Approved':           'bg-emerald-50 text-emerald-700 border border-emerald-200',
 };
 
-const STATUSES = ['Pending Review','CAD Approved','Needs Manual Check','In Production','Made','Hold','Rejected'];
+const STATUSES = ['Pending', 'Needs Manual Check', 'Hold', 'Rejected', 'Approved'];
 const STONE_TYPES = ['Diamond','Colourstone','Colored Diamond','Pearl'];
 const SHAPES = ['ROUND','PEAR','MARQUISE','OVAL','PRINCESS','CUSHION','EMERALD','RADIANT','BAGUETTE','HEART','TRILLION','LOZENGE'] as const;
 

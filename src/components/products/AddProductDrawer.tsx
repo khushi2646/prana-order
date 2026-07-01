@@ -75,7 +75,7 @@ function SizeSelector({ category, value, onChange }: {
   );
 }
 
-const STATUSES = ['Pending Review', 'CAD Approved', 'Needs Manual Check', 'In Production', 'Made', 'Hold', 'Rejected'];
+const STATUSES = ['Pending', 'Needs Manual Check', 'Hold', 'Rejected', 'Approved'];
 const STONE_TYPES = ['Diamond', 'Colourstone', 'Colored Diamond', 'Pearl'];
 const SHAPES = ['ROUND','PEAR','MARQUISE','OVAL','PRINCESS','CUSHION','EMERALD','RADIANT','BAGUETTE','HEART','TRILLION','LOZENGE'] as const;
 
