@@ -622,46 +622,55 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
               value={form.quantity} onChange={e => set('quantity', e.target.value)} />
           </div>
 
-          {/* ── Gold Colour ──────────────────────────────────────────── */}
+          {/* Gold Colour */}
           <div className="space-y-1.5">
-            <label className={slabel}>Gold Colour <span className="text-red-500">*</span></label>
-            <div className="flex items-center gap-4">
-              {(['Yellow', 'White', 'Rose'] as const).map(c => {
-                const val = c.toLowerCase();
-                return (
-                  <label key={c} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox"
-                      checked={form.goldColours.includes(val)}
-                      onChange={e => {
-                        const next = e.target.checked
-                          ? [...form.goldColours, val]
-                          : form.goldColours.filter(g => g !== val);
-                        set('goldColours', next);
-                        if (next.length > 0) setGoldColoursErr(null);
-                      }}
-                      className="w-4 h-4 rounded accent-[#456158]"
-                    />
-                    <span className="text-sm text-[#1a1a1a]">{c}</span>
-                  </label>
-                );
-              })}
+            <label className="block text-xs font-medium text-[#6b6560] mb-1">
+              Gold Colour <span className="text-red-500">*</span>
+            </label>
+            <div className="flex items-center gap-6">
+              {['Yellow', 'White', 'Rose'].map(c => (
+                <label key={c} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.goldColours.includes(c.toLowerCase())}
+                    onChange={e => {
+                      const val = c.toLowerCase();
+                      const next = e.target.checked
+                        ? [...form.goldColours, val]
+                        : form.goldColours.filter(g => g !== val);
+                      set('goldColours', next);
+                    }}
+                    className="w-4 h-4 accent-[#456158]"
+                  />
+                  <span className="text-sm text-[#1a1a1a]">{c}</span>
+                </label>
+              ))}
             </div>
-            {goldColoursErr && <p className="text-xs text-red-500">{goldColoursErr}</p>}
+            {goldColoursErr && <p className="text-xs text-red-500 mt-1">{goldColoursErr}</p>}
           </div>
 
-          {/* ── Gold Carat ───────────────────────────────────────────── */}
+          {/* Gold Carat */}
           <div className="space-y-1.5">
-            <label className={slabel}>Gold Carat <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-[#6b6560] mb-1">
+              Gold Carat <span className="text-red-500">*</span>
+            </label>
             <div className="flex gap-2">
-              {(['9kt', '14kt', '18kt'] as const).map(k => (
-                <button key={k} type="button"
-                  onClick={() => { set('goldCarat', k); setGoldCaratErr(null); }}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition-colors ${form.goldCarat === k ? 'bg-[#456158] text-white border-[#456158]' : 'border-[#ddd5c8] text-[#6b6560] hover:bg-[#f8f5f0]'}`}>
+              {['9kt', '14kt', '18kt'].map(k => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => set('goldCarat', k)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    form.goldCarat === k
+                      ? 'bg-[#456158] text-white border-[#456158]'
+                      : 'bg-white text-[#6b6560] border-[#ddd5c8] hover:bg-[#f8f5f0]'
+                  }`}
+                >
                   {k}
                 </button>
               ))}
             </div>
-            {goldCaratErr && <p className="text-xs text-red-500">{goldCaratErr}</p>}
+            {goldCaratErr && <p className="text-xs text-red-500 mt-1">{goldCaratErr}</p>}
           </div>
 
           {/* ── Findings (hidden in new-product mode) ───────────────── */}
