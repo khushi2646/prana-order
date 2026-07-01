@@ -115,7 +115,7 @@ interface FormState {
 }
 
 const EMPTY_LINE: StoneLine = {
-  stoneType: '', shape: '', sizeLength: '', sizeWidth: '',
+  stoneType: 'Diamond', shape: '', sizeLength: '', sizeWidth: '',
   colour: 'WHITE', count: '', totalWeight: '', setting: '', remarks: '',
 };
 

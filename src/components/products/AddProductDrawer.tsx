@@ -112,7 +112,7 @@ interface FormState {
   stoneLines: StoneLine[];
 }
 
-const EMPTY_LINE: StoneLine = { stoneType: '', shape: '', sizeLength: '', sizeWidth: '', colour: 'WHITE', count: '', totalWeight: '', setting: '', remarks: '' };
+const EMPTY_LINE: StoneLine = { stoneType: 'Diamond', shape: '', sizeLength: '', sizeWidth: '', colour: 'WHITE', count: '', totalWeight: '', setting: '', remarks: '' };
 
 const EMPTY: FormState = {
   designNumber: '', category: '', categoryCode: '', style: '', styleCode: '', queueCode: '',
