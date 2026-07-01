@@ -102,6 +102,7 @@ interface FormState {
   queueCode: string;
   size: string;
   cadImageUrl: string;
+  referenceImageUrl: string;
   goldWeightNine: string;
   goldWeightFourteen: string;
   goldWeightEighteen: string;
@@ -115,8 +116,9 @@ const EMPTY_LINE: StoneLine = { stoneType: '', shape: '', sizeLength: '', sizeWi
 
 const EMPTY: FormState = {
   designNumber: '', category: '', categoryCode: '', style: '', styleCode: '', queueCode: '',
-  size: '', cadImageUrl: '', goldWeightNine: '', goldWeightFourteen: '', goldWeightEighteen: '',
-  rhodiumInstruction: '', status: 'Pending Review', remarks: '', stoneLines: [],
+  size: '', cadImageUrl: '', referenceImageUrl: '',
+  goldWeightNine: '', goldWeightFourteen: '', goldWeightEighteen: '',
+  rhodiumInstruction: '', status: 'Pending', remarks: '', stoneLines: [],
 };
 
 interface GaugeHint {
@@ -280,6 +282,11 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [refImgMode, setRefImgMode]       = useState<'url' | 'upload'>('url');
+  const [refUploading, setRefUploading]   = useState(false);
+  const [refUploadErr, setRefUploadErr]   = useState<string | null>(null);
+  const [refUploadPreview, setRefUploadPreview] = useState('');
+
   // Escape key + body scroll lock
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -341,6 +348,30 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
     }));
   }
 
+  async function handleRefUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRefUploading(true);
+    setRefUploadErr(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', 'prana_reference_images');
+      const res = await fetch('https://api.cloudinary.com/v1_1/bn8rjdho/image/upload', {
+        method: 'POST',
+        body: fd,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json() as { secure_url: string };
+      set('referenceImageUrl', data.secure_url);
+      setRefUploadPreview(data.secure_url);
+    } catch {
+      setRefUploadErr('Upload failed, please try again');
+    } finally {
+      setRefUploading(false);
+    }
+  }
+
   function addLine() { set('stoneLines', [...form.stoneLines, { ...EMPTY_LINE }]); }
   function removeLine(i: number) { set('stoneLines', form.stoneLines.filter((_, idx) => idx !== i)); }
   function setLine(i: number, f: keyof StoneLine, v: string) {
@@ -365,6 +396,7 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
           queueCode:             form.queueCode || undefined,
           size: form.size || undefined,
           cadImageUrl:           form.cadImageUrl.trim() || undefined,
+          referenceImageUrl:     form.referenceImageUrl.trim() || undefined,
           goldWeights: {
             nineKt:     form.goldWeightNine     ? parseFloat(form.goldWeightNine)     : undefined,
             fourteenKt: form.goldWeightFourteen ? parseFloat(form.goldWeightFourteen) : undefined,
@@ -515,6 +547,53 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
                 <p className="mt-1 text-[11px] text-gray-400">
                   File sharing must be set to <span className="font-medium text-gray-500">"Anyone with the link"</span> in Google Drive for the image to display.
                 </p>
+              </div>
+
+              {/* Reference Image */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className={lbl} style={{ marginBottom: 0 }}>Reference Image</label>
+                  <div className="flex rounded-md overflow-hidden border border-[#ddd5c8] text-[11px]">
+                    <button type="button"
+                      onClick={() => setRefImgMode('url')}
+                      className={`px-2 py-0.5 transition-colors ${refImgMode === 'url' ? 'bg-[#f0ebe3] text-[#1a1a1a] font-medium' : 'text-[#6b6560] hover:bg-[#f8f5f0]'}`}>
+                      Paste URL
+                    </button>
+                    <button type="button"
+                      onClick={() => setRefImgMode('upload')}
+                      className={`px-2 py-0.5 transition-colors border-l border-[#ddd5c8] ${refImgMode === 'upload' ? 'bg-[#f0ebe3] text-[#1a1a1a] font-medium' : 'text-[#6b6560] hover:bg-[#f8f5f0]'}`}>
+                      Upload File
+                    </button>
+                  </div>
+                </div>
+                {refImgMode === 'url' ? (
+                  <input className={inp} type="text"
+                    placeholder="https://... or Google Drive link"
+                    value={form.referenceImageUrl}
+                    onChange={e => set('referenceImageUrl', e.target.value)} />
+                ) : refUploading ? (
+                  <div className="flex items-center justify-center gap-2 text-sm text-[#6b6560] border-2 border-dashed border-[#ddd5c8] rounded-lg p-4">
+                    <span className="w-4 h-4 border-2 border-[#6b6560] border-t-transparent rounded-full animate-spin shrink-0" />
+                    Uploading...
+                  </div>
+                ) : refUploadPreview ? (
+                  <div className="relative inline-block">
+                    <img src={refUploadPreview} alt="Reference" className="w-20 h-20 object-cover rounded-lg border border-[#ddd5c8]" />
+                    <button type="button"
+                      onClick={() => { set('referenceImageUrl', ''); setRefUploadPreview(''); }}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white border border-[#ddd5c8] rounded-full text-[#6b6560] flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors text-xs font-bold shadow-sm">
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <label className="block cursor-pointer">
+                    <input type="file" accept="image/*" className="sr-only" onChange={handleRefUpload} />
+                    <div className="border-2 border-dashed border-[#ddd5c8] rounded-lg p-4 text-center hover:border-brand/40 transition-colors">
+                      <span className="text-sm text-[#6b6560]">Click to upload or drag and drop</span>
+                    </div>
+                  </label>
+                )}
+                {refUploadErr && <p className="text-xs text-red-500 mt-1">{refUploadErr}</p>}
               </div>
             </div>
 

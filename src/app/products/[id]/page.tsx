@@ -37,7 +37,7 @@ interface Product {
   _id: string; designNumber: string;
   category?: string; categoryCode?: string;
   style?: string; styleCode?: string; queueCode?: string;
-  size?: string; cadImageUrl?: string;
+  size?: string; cadImageUrl?: string; referenceImageUrl?: string | null;
   goldWeights?: GoldWeights;
   totalDiamondWeight?: number; totalDiamondPcs?: number;
   totalColourStoneWeight?: number; totalColourstonePcs?: number;
@@ -1262,6 +1262,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [cadErr, setCadErr] = useState<string | null>(null);
   const [imgFailed, setImgFailed] = useState(false);
 
+  const [refImgMode, setRefImgMode]             = useState<'url' | 'upload'>('url');
+  const [refUrlDraft, setRefUrlDraft]           = useState('');
+  const [refSaving, setRefSaving]               = useState(false);
+  const [refSaveErr, setRefSaveErr]             = useState<string | null>(null);
+  const [refUploading, setRefUploading]         = useState(false);
+  const [refUploadErr, setRefUploadErr]         = useState<string | null>(null);
+  const [refUploadPreview, setRefUploadPreview] = useState('');
+
 
   // Version tabs
   const [activeTab, setActiveTab] = useState(1);
@@ -1282,6 +1290,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       const p: Product = await res.json();
       setProduct(p);
       setCadDraft(p.cadImageUrl ?? '');
+      setRefUrlDraft(p.referenceImageUrl ?? '');
+      setRefUploadPreview('');
       setImgFailed(false);
     } catch (e) {
       setFetchErr(e instanceof Error ? e.message : 'Failed to load product');
@@ -1327,6 +1337,37 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     try { await putField({ cadImageUrl: cadDraft.trim() || undefined }); setImgFailed(false); }
     catch (e) { setCadErr(e instanceof Error ? e.message : 'Save failed'); }
     finally { setCadSaving(false); }
+  }
+
+  async function saveRefUrl() {
+    setRefSaving(true); setRefSaveErr(null);
+    try { await putField({ referenceImageUrl: refUrlDraft.trim() || null }); setRefUploadPreview(''); }
+    catch (e) { setRefSaveErr(e instanceof Error ? e.message : 'Save failed'); }
+    finally { setRefSaving(false); }
+  }
+
+  async function handleRefUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRefUploading(true); setRefUploadErr(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', 'prana_reference_images');
+      const res = await fetch('https://api.cloudinary.com/v1_1/bn8rjdho/image/upload', {
+        method: 'POST',
+        body: fd,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json() as { secure_url: string };
+      await putField({ referenceImageUrl: data.secure_url });
+      setRefUploadPreview(data.secure_url);
+      setRefUrlDraft(data.secure_url);
+    } catch {
+      setRefUploadErr('Upload failed, please try again');
+    } finally {
+      setRefUploading(false);
+    }
   }
 
   async function saveRename(versionNumber: number) {
@@ -1595,6 +1636,75 @@ async function submitVersion(draft: VersionDraft) {
               {cadSaving ? <Spinner /> : null}
               Save Image URL
             </button>
+          </div>
+
+          {/* Reference Image */}
+          <div className="pt-4 border-t border-[#f0ebe3] space-y-3">
+            {product.referenceImageUrl && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-[#6b6560]">Reference Image</label>
+                <img src={product.referenceImageUrl} alt="Reference"
+                  className="max-h-64 w-full rounded-xl object-contain border border-[#f0ebe3]" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-[#6b6560]">
+                  {product.referenceImageUrl ? 'Update Reference Image' : 'Reference Image'}
+                </label>
+                <div className="flex rounded-md overflow-hidden border border-[#ddd5c8] text-[11px]">
+                  <button type="button"
+                    onClick={() => setRefImgMode('url')}
+                    className={`px-2 py-0.5 transition-colors ${refImgMode === 'url' ? 'bg-[#f0ebe3] text-[#1a1a1a] font-medium' : 'text-[#6b6560] hover:bg-[#f8f5f0]'}`}>
+                    Paste URL
+                  </button>
+                  <button type="button"
+                    onClick={() => setRefImgMode('upload')}
+                    className={`px-2 py-0.5 transition-colors border-l border-[#ddd5c8] ${refImgMode === 'upload' ? 'bg-[#f0ebe3] text-[#1a1a1a] font-medium' : 'text-[#6b6560] hover:bg-[#f8f5f0]'}`}>
+                    Upload File
+                  </button>
+                </div>
+              </div>
+              {refImgMode === 'url' ? (
+                <>
+                  <textarea
+                    value={refUrlDraft}
+                    onChange={e => setRefUrlDraft(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-lg border border-[#ddd5c8] px-3 py-2 text-xs text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none placeholder-[#6b6560]/40"
+                    placeholder="https://... or Cloudinary URL"
+                  />
+                  {refSaveErr && <p className="text-xs text-red-500">{refSaveErr}</p>}
+                  <button onClick={saveRefUrl} disabled={refSaving}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand rounded-lg hover:bg-brand/90 disabled:opacity-60 transition-colors">
+                    {refSaving ? <Spinner /> : null}
+                    Save Reference Image
+                  </button>
+                </>
+              ) : refUploading ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-[#6b6560] border-2 border-dashed border-[#ddd5c8] rounded-lg p-4">
+                  <Spinner />
+                  Uploading...
+                </div>
+              ) : refUploadPreview ? (
+                <div className="relative inline-block">
+                  <img src={refUploadPreview} alt="Reference" className="w-20 h-20 object-cover rounded-lg border border-[#ddd5c8]" />
+                  <button type="button"
+                    onClick={() => setRefUploadPreview('')}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white border border-[#ddd5c8] rounded-full text-[#6b6560] flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors text-xs font-bold shadow-sm">
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <label className="block cursor-pointer">
+                  <input type="file" accept="image/*" className="sr-only" onChange={handleRefUpload} />
+                  <div className="border-2 border-dashed border-[#ddd5c8] rounded-lg p-4 text-center hover:border-brand/40 transition-colors">
+                    <span className="text-sm text-[#6b6560]">Click to upload or drag and drop</span>
+                  </div>
+                </label>
+              )}
+              {refUploadErr && <p className="text-xs text-red-500">{refUploadErr}</p>}
+            </div>
           </div>
         </div>
 

@@ -50,6 +50,7 @@ export interface IProduct extends Document {
   queueCode?: string;
   size?: string | null;
   cadImageUrl?: string;
+  referenceImageUrl?: string | null;
   additionalImages: string[];
   goldWeights?: IGoldWeights;
   totalDiamondWeight?: number;
@@ -120,9 +121,10 @@ const ProductSchema = new Schema<IProduct>(
     styleCode:    { type: String, trim: true },
     queueCode:    { type: String, trim: true },
 
-    size:             { type: String, default: null },
-    cadImageUrl:      { type: String, trim: true },
-    additionalImages: [{ type: String }],
+    size:              { type: String, default: null },
+    cadImageUrl:       { type: String, trim: true },
+    referenceImageUrl: { type: String, default: null },
+    additionalImages:  [{ type: String }],
 
     goldWeights: {
       nineKt:     { type: Number },
