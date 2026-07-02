@@ -570,18 +570,18 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
           {/* ── Vendor Product form ──────────────────────────────────── */}
           {isVendorProduct && (
             <>
-              <div className="space-y-1.5">
-                <label className={slabel}>Description <span className="text-red-500">*</span></label>
-                <textarea className={`${inp} resize-none`} rows={3}
-                  placeholder="Describe the vendor product…"
-                  value={vendorDescription} onChange={e => setVendorDescription(e.target.value)} />
-              </div>
-
               {/* Design Code */}
               <div className="space-y-1.5">
                 <label className={slabel}>Design Code</label>
                 <input className={inp} type="text" placeholder="e.g. VD001"
                   value={vendorDesignCode} onChange={e => setVendorDesignCode(e.target.value)} />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className={slabel}>Description <span className="text-red-500">*</span></label>
+                <textarea className={`${inp} resize-none`} rows={3}
+                  placeholder="Describe the vendor product…"
+                  value={vendorDescription} onChange={e => setVendorDescription(e.target.value)} />
               </div>
 
               {/* Reference Image */}

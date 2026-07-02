@@ -249,7 +249,7 @@ export default function ProductsPage() {
   const [error, setError]                     = useState<string | null>(null);
   const [search, setSearch]                   = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter]       = useState('');
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter]   = useState('');
   const [styleFilter, setStyleFilter]         = useState('');
   const [sortBy, setSortBy]                   = useState<SortBy>('newest');
@@ -266,9 +266,9 @@ export default function ProductsPage() {
     else { setLoading(true); setError(null); }
 
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(pageNum) });
-    if (debouncedSearch) params.set('search', debouncedSearch);
-    if (statusFilter)   params.set('status',   statusFilter);
-    if (categoryFilter) params.set('category', categoryFilter);
+    if (debouncedSearch)          params.set('search', debouncedSearch);
+    if (selectedStatuses.length)  params.set('status', selectedStatuses.join(','));
+    if (categoryFilter)           params.set('category', categoryFilter);
     if (styleFilter)    params.set('style',    styleFilter);
     params.set('sort', sortBy);
 
@@ -285,7 +285,7 @@ export default function ProductsPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [debouncedSearch, statusFilter, categoryFilter, styleFilter, sortBy]);
+  }, [debouncedSearch, selectedStatuses, categoryFilter, styleFilter, sortBy]);
 
   // Refetch page 1 whenever filters change (doFetch reference changes with deps)
   useEffect(() => { doFetch(1, false); }, [doFetch]);
@@ -303,13 +303,13 @@ export default function ProductsPage() {
   function clearAll() {
     setSearch('');
     setDebouncedSearch('');
-    setStatusFilter('');
+    setSelectedStatuses([]);
     setCategoryFilter('');
     setStyleFilter('');
     setSortBy('newest');
   }
 
-  const hasFilters = !!(search || statusFilter || categoryFilter || styleFilter || sortBy !== 'newest');
+  const hasFilters = !!(search || selectedStatuses.length || categoryFilter || styleFilter || sortBy !== 'newest');
   const hasMore    = products.length < total;
 
   return (
@@ -340,12 +340,19 @@ export default function ProductsPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <CustomSelect
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={STATUSES.map(s => ({ value: s, label: s }))}
-              placeholder="All Statuses"
-            />
+            {STATUSES.map(s => (
+              <button key={s} type="button"
+                onClick={() => setSelectedStatuses(prev =>
+                  prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+                )}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  selectedStatuses.includes(s)
+                    ? 'bg-[#456158] text-white border-[#456158]'
+                    : 'bg-white border-[#ddd5c8] text-[#6b6560] hover:bg-[#f8f5f0]'
+                }`}>
+                {s}
+              </button>
+            ))}
             <CustomSelect
               value={categoryFilter}
               onChange={handleCategoryChange}
