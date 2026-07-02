@@ -158,9 +158,15 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
   const router = useRouter();
 
   // ── Product type ────────────────────────────────────────────────────────────
-  const [isVendorProduct, setIsVendorProduct] = useState(false);
-  const [vendorDescription, setVendorDescription] = useState('');
-  const [vendorRemarks, setVendorRemarks]         = useState('');
+  const [isVendorProduct, setIsVendorProduct]             = useState(false);
+  const [vendorDescription, setVendorDescription]         = useState('');
+  const [vendorDesignCode, setVendorDesignCode]           = useState('');
+  const [vendorReferenceImageUrl, setVendorReferenceImageUrl] = useState('');
+  const [vendorRemarks, setVendorRemarks]                 = useState('');
+  const [vendorImgMode, setVendorImgMode]                 = useState<'url' | 'upload'>('url');
+  const [vendorUploading, setVendorUploading]             = useState(false);
+  const [vendorUploadErr, setVendorUploadErr]             = useState<string | null>(null);
+  const [vendorUploadPreview, setVendorUploadPreview]     = useState('');
 
   // ── Core form ───────────────────────────────────────────────────────────────
   const [form, setForm]   = useState<FormState>(EMPTY_FORM);
@@ -284,7 +290,13 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
   function resetAll() {
     setIsVendorProduct(false);
     setVendorDescription('');
+    setVendorDesignCode('');
+    setVendorReferenceImageUrl('');
     setVendorRemarks('');
+    setVendorImgMode('url');
+    setVendorUploading(false);
+    setVendorUploadErr(null);
+    setVendorUploadPreview('');
     setForm(EMPTY_FORM);
     setSelectedProduct(null);
     setCatalogueSearch('');
@@ -375,6 +387,23 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
     }
   }
 
+  // ── Vendor image upload ──────────────────────────────────────────────────────
+  async function handleVendorImgUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (!file) return;
+    setVendorUploading(true); setVendorUploadErr(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', 'prana_reference_images');
+      const res = await fetch('https://api.cloudinary.com/v1_1/bn8rjdho/image/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json() as { secure_url: string };
+      setVendorReferenceImageUrl(data.secure_url);
+      setVendorUploadPreview(data.secure_url);
+    } catch { setVendorUploadErr('Upload failed, please try again'); }
+    finally { setVendorUploading(false); }
+  }
+
   // ── Vendor product submit ────────────────────────────────────────────────────
   async function handleVendorSubmit() {
     setError(null);
@@ -386,23 +415,25 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
 
     setSaving(true);
     try {
-      const body = {
-        productCode:       `VENDOR-${Date.now()}`,
-        isVendorProduct:   true,
-        vendorDescription: vendorDescription.trim(),
-        remarks:           vendorRemarks.trim() || undefined,
-        goldColours:       form.goldColours,
-        goldCarat:         form.goldCarat,
-        quantity:          1,
-        stage:             'cad',
+      const body: Record<string, unknown> = {
+        productCode:            `VENDOR-${Date.now()}`,
+        isVendorProduct:        true,
+        vendorDescription:      vendorDescription.trim(),
+        goldColours:            form.goldColours,
+        goldCarat:              form.goldCarat,
+        quantity:               1,
+        stage:                  'cad',
       };
+      if (vendorDesignCode.trim())       body.vendorDesignCode        = vendorDesignCode.trim();
+      if (vendorReferenceImageUrl.trim()) body.vendorReferenceImageUrl = vendorReferenceImageUrl.trim();
+      if (vendorRemarks.trim())           body.remarks                 = vendorRemarks.trim();
       const res = await fetch(`/api/orders/${orderId}/products`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error((data as { message?: string }).message ?? 'Failed to add vendor product');
+      if (!res.ok) throw new Error((data as Record<string, string>).message ?? 'Failed to add vendor product');
       resetAll();
       onSuccess();
       onClose();
@@ -544,6 +575,56 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
                 <textarea className={`${inp} resize-none`} rows={3}
                   placeholder="Describe the vendor product…"
                   value={vendorDescription} onChange={e => setVendorDescription(e.target.value)} />
+              </div>
+
+              {/* Design Code */}
+              <div className="space-y-1.5">
+                <label className={slabel}>Design Code</label>
+                <input className={inp} type="text" placeholder="e.g. VD001"
+                  value={vendorDesignCode} onChange={e => setVendorDesignCode(e.target.value)} />
+              </div>
+
+              {/* Reference Image */}
+              <div className="space-y-1.5">
+                <label className={slabel}>Reference Image</label>
+                <div className="flex gap-2 mb-2">
+                  {(['Paste URL', 'Upload File'] as const).map(m => (
+                    <button key={m} type="button"
+                      onClick={() => setVendorImgMode(m === 'Upload File' ? 'upload' : 'url')}
+                      className={`px-3 py-1 text-xs font-medium rounded-md border transition-colors ${
+                        (m === 'Upload File') === (vendorImgMode === 'upload')
+                          ? 'bg-[#456158] text-white border-[#456158]'
+                          : 'bg-white text-[#6b6560] border-[#ddd5c8] hover:bg-[#f8f5f0]'
+                      }`}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+                {vendorImgMode === 'url' ? (
+                  <input className={inp} type="text" placeholder="https://... or Google Drive link"
+                    value={vendorReferenceImageUrl} onChange={e => setVendorReferenceImageUrl(e.target.value)} />
+                ) : (
+                  <div className="space-y-2">
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#ddd5c8] rounded-lg p-4 text-center cursor-pointer hover:border-[#456158] transition-colors">
+                      <span className="text-sm text-[#6b6560]">
+                        {vendorUploading ? 'Uploading…' : 'Click to upload or drag and drop'}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={handleVendorImgUpload} disabled={vendorUploading} />
+                    </label>
+                    {vendorUploadErr && <p className="text-xs text-red-500">{vendorUploadErr}</p>}
+                    {vendorUploadPreview && (
+                      <div className="relative w-20 h-20">
+                        <img src={vendorUploadPreview} alt="" className="w-20 h-20 object-cover rounded-lg border border-[#f0ebe3]" />
+                        <button type="button"
+                          onClick={() => { setVendorReferenceImageUrl(''); setVendorUploadPreview(''); }}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white border border-[#ddd5c8] rounded-full flex items-center justify-center text-[#6b6560] hover:text-red-500 text-xs leading-none">
+                          ×
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
