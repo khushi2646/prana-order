@@ -10,16 +10,18 @@ type Stage     = 'cad' | 'diamond_procurement' | 'manufacturing' | 'order_receiv
 type ActiveTab = 'orders' | 'products';
 
 interface OrderProduct {
-  productCode:   string;
-  stage:         Stage;
-  quantity?:     number;
-  goldColour?:   string;
-  goldCarat?:    string;
-  productRef?:   string | null;
-  isNewProduct?: boolean;
-  stoneLines?:   unknown[];
-  findings?:     string;
-  remarks?:      string;
+  productCode:       string;
+  stage:             Stage;
+  quantity?:         number;
+  goldColour?:       string;
+  goldCarat?:        string;
+  productRef?:       string | null;
+  isNewProduct?:     boolean;
+  isVendorProduct?:  boolean;
+  vendorDescription?: string;
+  stoneLines?:       unknown[];
+  findings?:         string;
+  remarks?:          string;
 }
 
 interface FlatProduct extends OrderProduct {
@@ -175,7 +177,14 @@ function FlatProductCard({ product, cadImageUrl, onClick }: {
         <div className="flex-1 min-w-0 space-y-1.5">
           {/* Top row: code + stage badge + qty */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-[#1a1a1a]">{product.productCode}</span>
+            <span className="font-bold text-[#1a1a1a]">
+              {product.isVendorProduct
+                ? ((product.vendorDescription ?? product.productCode).slice(0, 40) + ((product.vendorDescription ?? '').length > 40 ? '…' : ''))
+                : product.productCode}
+            </span>
+            {product.isVendorProduct && (
+              <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full">Vendor</span>
+            )}
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STAGE_BADGE[product.stage] ?? 'bg-gray-100 text-gray-600'}`}>
               {STAGE_LABEL[product.stage]}
             </span>

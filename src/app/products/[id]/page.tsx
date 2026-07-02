@@ -76,7 +76,7 @@ const STONE_TYPES = ['Diamond','Colourstone','Colored Diamond','Pearl'];
 const SHAPES = ['ROUND','PEAR','MARQUISE','OVAL','PRINCESS','CUSHION','EMERALD','RADIANT','BAGUETTE','HEART','TRILLION','LOZENGE'] as const;
 
 const EMPTY_LOCAL_LINE: LocalLine = {
-  stoneType: '', shape: '', sizeLength: '', sizeWidth: '', colour: 'WHITE',
+  stoneType: 'Diamond', shape: '', sizeLength: '', sizeWidth: '', colour: 'WHITE',
   count: undefined, totalWeight: undefined, setting: '', remarks: '',
 };
 

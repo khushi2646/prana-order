@@ -157,6 +157,11 @@ interface Props {
 export default function AddProductToOrderDrawer({ open, orderId, onClose, onSuccess }: Props) {
   const router = useRouter();
 
+  // ── Product type ────────────────────────────────────────────────────────────
+  const [isVendorProduct, setIsVendorProduct] = useState(false);
+  const [vendorDescription, setVendorDescription] = useState('');
+  const [vendorRemarks, setVendorRemarks]         = useState('');
+
   // ── Core form ───────────────────────────────────────────────────────────────
   const [form, setForm]   = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
@@ -277,6 +282,9 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
 
   // ── Reset everything ────────────────────────────────────────────────────────
   function resetAll() {
+    setIsVendorProduct(false);
+    setVendorDescription('');
+    setVendorRemarks('');
     setForm(EMPTY_FORM);
     setSelectedProduct(null);
     setCatalogueSearch('');
@@ -357,6 +365,44 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Failed to add product');
 
+      resetAll();
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── Vendor product submit ────────────────────────────────────────────────────
+  async function handleVendorSubmit() {
+    setError(null);
+    let ok = true;
+    if (!vendorDescription.trim()) { setError('Description is required.'); ok = false; }
+    if (form.goldColours.length === 0) { setGoldColoursErr('Select at least one gold colour'); ok = false; } else setGoldColoursErr(null);
+    if (!form.goldCarat)               { setGoldCaratErr('Select a gold carat');               ok = false; } else setGoldCaratErr(null);
+    if (!ok) return;
+
+    setSaving(true);
+    try {
+      const body = {
+        productCode:       `VENDOR-${Date.now()}`,
+        isVendorProduct:   true,
+        vendorDescription: vendorDescription.trim(),
+        remarks:           vendorRemarks.trim() || undefined,
+        goldColours:       form.goldColours,
+        goldCarat:         form.goldCarat,
+        quantity:          1,
+        stage:             'cad',
+      };
+      const res = await fetch(`/api/orders/${orderId}/products`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { message?: string }).message ?? 'Failed to add vendor product');
       resetAll();
       onSuccess();
       onClose();
@@ -472,7 +518,97 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
+          {/* ── Product Type toggle ──────────────────────────────────── */}
+          <div className="space-y-1.5">
+            <label className={slabel}>Product Type</label>
+            <div className="flex gap-2">
+              {(['Catalogue Product', 'Vendor Product'] as const).map(t => (
+                <button key={t} type="button"
+                  onClick={() => setIsVendorProduct(t === 'Vendor Product')}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    (t === 'Vendor Product') === isVendorProduct
+                      ? 'bg-[#456158] text-white border-[#456158]'
+                      : 'bg-white text-[#6b6560] border-[#ddd5c8] hover:bg-[#f8f5f0]'
+                  }`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Vendor Product form ──────────────────────────────────── */}
+          {isVendorProduct && (
+            <>
+              <div className="space-y-1.5">
+                <label className={slabel}>Description <span className="text-red-500">*</span></label>
+                <textarea className={`${inp} resize-none`} rows={3}
+                  placeholder="Describe the vendor product…"
+                  value={vendorDescription} onChange={e => setVendorDescription(e.target.value)} />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className={slabel}>Remarks</label>
+                <textarea className={`${inp} resize-none`} rows={2}
+                  placeholder="Any additional notes…"
+                  value={vendorRemarks} onChange={e => setVendorRemarks(e.target.value)} />
+              </div>
+
+              {/* Gold Colour */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-[#6b6560] mb-1">
+                  Gold Colour <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-6">
+                  {['Yellow', 'White', 'Rose'].map(c => (
+                    <label key={c} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox"
+                        checked={form.goldColours.includes(c.toLowerCase())}
+                        onChange={e => {
+                          const val = c.toLowerCase();
+                          const next = e.target.checked
+                            ? [...form.goldColours, val]
+                            : form.goldColours.filter(g => g !== val);
+                          set('goldColours', next);
+                          if (next.length > 0) setGoldColoursErr(null);
+                        }}
+                        className="w-4 h-4 accent-[#456158]"
+                      />
+                      <span className="text-sm text-[#1a1a1a]">{c}</span>
+                    </label>
+                  ))}
+                </div>
+                {goldColoursErr && <p className="text-xs text-red-500 mt-1">{goldColoursErr}</p>}
+              </div>
+
+              {/* Gold Carat */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-[#6b6560] mb-1">
+                  Gold Carat <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  {['9kt', '14kt', '18kt'].map(k => (
+                    <button key={k} type="button"
+                      onClick={() => { set('goldCarat', k); setGoldCaratErr(null); }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        form.goldCarat === k
+                          ? 'bg-[#456158] text-white border-[#456158]'
+                          : 'bg-white text-[#6b6560] border-[#ddd5c8] hover:bg-[#f8f5f0]'
+                      }`}>
+                      {k}
+                    </button>
+                  ))}
+                </div>
+                {goldCaratErr && <p className="text-xs text-red-500 mt-1">{goldCaratErr}</p>}
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+              )}
+            </>
+          )}
+
           {/* ── Is New Product ──────────────────────────────────────── */}
+          {!isVendorProduct && (<>
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <input id="isNew" type="checkbox" checked={form.isNewProduct}
@@ -713,11 +849,17 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
           )}
+          </>)}
         </div>
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[#e8e0d4] space-y-2">
-          {isNewMode ? (
+          {isVendorProduct ? (
+            <button type="button" onClick={handleVendorSubmit} disabled={saving}
+              className="w-full py-2.5 bg-[#456158] text-white text-sm font-semibold rounded-lg hover:bg-[#3a5049] transition-colors disabled:opacity-60">
+              {saving ? 'Adding…' : 'Add Vendor Product'}
+            </button>
+          ) : isNewMode ? (
             <>
               <button type="button" onClick={handleFillNow} disabled={saving || fetchingNumber}
                 className="w-full py-2.5 bg-[#456158] text-white text-sm font-semibold rounded-lg hover:bg-[#3a5049] transition-colors disabled:opacity-60">

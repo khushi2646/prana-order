@@ -23,14 +23,18 @@ interface OrderProduct {
   productCode:          string;
   productRef?:          string | null;
   isNewProduct?:        boolean;
+  isVendorProduct?:     boolean;
+  vendorDescription?:   string;
   newProductDescription?: string;
   quantity:             number;
-  goldColour:           GoldColour;
-  goldCarat:            GoldCarat;
+  goldColour?:          GoldColour;
+  goldColours?:         string[];
+  goldCarat?:           GoldCarat;
   findings?:            string;
   stoneLines:           OrderStoneLine[];
   stage:                Stage;
   remarks?:             string;
+  vendorFollowUps?:     Array<{ date: string; notes: string }>;
 }
 
 interface FollowUp {
@@ -100,8 +104,8 @@ function productToEditForm(p: OrderProduct): EditProductForm {
   return {
     productCode: p.productCode,
     quantity:    String(p.quantity),
-    goldColour:  p.goldColour,
-    goldCarat:   p.goldCarat,
+    goldColour:  p.goldColour ?? '',
+    goldCarat:   p.goldCarat  ?? '',
     findings:    p.findings ?? '',
     stage:       p.stage,
     remarks:     p.remarks ?? '',
@@ -209,7 +213,12 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
   const [removing, setRemoving]     = useState(false);
   const [editError, setEditError]   = useState<string | null>(null);
 
-  const isIncomplete = product.isNewProduct && !product.productRef;
+  const [fuText, setFuText]     = useState('');
+  const [addingFu, setAddingFu] = useState(false);
+  const [fuSaving, setFuSaving] = useState(false);
+  const [fuError, setFuError]   = useState<string | null>(null);
+
+  const isIncomplete = !product.isVendorProduct && product.isNewProduct && !product.productRef;
 
   function setEF<K extends keyof EditProductForm>(key: K, val: EditProductForm[K]) {
     setEditForm(prev => ({ ...prev, [key]: val }));
@@ -287,6 +296,28 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
       onRefresh();
     } finally {
       setRemoving(false);
+    }
+  }
+
+  async function saveVendorFollowUp() {
+    if (!fuText.trim()) { setFuError('Notes are required.'); return; }
+    setFuSaving(true);
+    setFuError(null);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/products/${index}/followups`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ notes: fuText.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { message?: string }).message ?? 'Failed to save');
+      setFuText('');
+      setAddingFu(false);
+      onRefresh();
+    } catch (err) {
+      setFuError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setFuSaving(false);
     }
   }
 
@@ -433,19 +464,36 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
       </div>
       {/* Top row */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-bold text-[#1a1a1a]">{product.productCode}</span>
-        {cadEntry && (cadEntry.category || cadEntry.style) && (
+        {product.isVendorProduct ? (
           <>
-            <span className="text-[#ddd5c8]">·</span>
-            <span className="text-sm text-[#6b6560]">
-              {[cadEntry.category, cadEntry.style].filter(Boolean).join(' · ')}
+            <span className="font-bold text-[#1a1a1a]">
+              {(product.vendorDescription ?? product.productCode).slice(0, 40)}
+              {(product.vendorDescription ?? '').length > 40 ? '…' : ''}
             </span>
+            <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full">Vendor</span>
+            {(product.goldColours ?? []).map(c => (
+              <span key={c} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[c as GoldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
+                {c}
+              </span>
+            ))}
           </>
-        )}
-        {product.goldColour && (
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[product.goldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
-            {product.goldColour}
-          </span>
+        ) : (
+          <>
+            <span className="font-bold text-[#1a1a1a]">{product.productCode}</span>
+            {cadEntry && (cadEntry.category || cadEntry.style) && (
+              <>
+                <span className="text-[#ddd5c8]">·</span>
+                <span className="text-sm text-[#6b6560]">
+                  {[cadEntry.category, cadEntry.style].filter(Boolean).join(' · ')}
+                </span>
+              </>
+            )}
+            {product.goldColour && (
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[product.goldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
+                {product.goldColour}
+              </span>
+            )}
+          </>
         )}
         {product.goldCarat && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8] uppercase">
@@ -487,6 +535,47 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
       </div>
 
       {product.remarks && <p className="text-xs text-[#6b6560] italic">{product.remarks}</p>}
+
+      {/* ── Vendor follow-ups ──────────────────────────────────── */}
+      {product.isVendorProduct && (
+        <div className="space-y-2 pt-2 border-t border-[#f0ebe3]">
+          <p className="text-xs font-semibold text-[#6b6560] uppercase tracking-wider">Follow-ups</p>
+          {(product.vendorFollowUps ?? []).length > 0 && (
+            <div className="space-y-1.5">
+              {(product.vendorFollowUps ?? []).map((fu, i) => (
+                <div key={i} className="flex gap-3 text-xs">
+                  <span className="text-[#6b6560] shrink-0">{fmtDate(fu.date)}</span>
+                  <span className="text-[#1a1a1a]">{fu.notes}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {(product.vendorFollowUps ?? []).length >= 5 ? (
+            <p className="text-xs text-[#6b6560] italic">Maximum follow-ups reached.</p>
+          ) : !addingFu ? (
+            <button type="button" onClick={() => setAddingFu(true)}
+              className="text-xs text-[#456158] font-semibold hover:underline">+ Add Follow-up</button>
+          ) : (
+            <div className="space-y-2">
+              <textarea
+                className="w-full px-3 py-2 text-xs bg-white border border-[#ddd5c8] rounded-lg focus:outline-none focus:border-[#456158] resize-none"
+                rows={2} placeholder="Notes…" value={fuText}
+                onChange={e => setFuText(e.target.value)} autoFocus />
+              {fuError && <p className="text-xs text-red-500">{fuError}</p>}
+              <div className="flex gap-2">
+                <button type="button" onClick={saveVendorFollowUp} disabled={fuSaving}
+                  className="px-3 py-1.5 bg-[#456158] text-white text-xs font-semibold rounded-lg hover:bg-[#3a5049] transition-colors disabled:opacity-60">
+                  {fuSaving ? 'Saving…' : 'Save'}
+                </button>
+                <button type="button" onClick={() => { setAddingFu(false); setFuText(''); setFuError(null); }}
+                  className="px-3 py-1.5 text-xs font-semibold border border-[#ddd5c8] text-[#6b6560] rounded-lg hover:bg-[#f0ebe3] transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

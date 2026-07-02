@@ -26,6 +26,9 @@ const OrderProductSchema = new Schema(
     stoneLines:          [StoneLineSchema],
     stage:               { type: String, enum: ['cad', 'diamond_procurement', 'manufacturing', 'order_received'], default: 'cad' },
     remarks:             { type: String },
+    isVendorProduct:     { type: Boolean, default: false },
+    vendorDescription:   { type: String },
+    vendorFollowUps:     { type: [{ date: Date, notes: String }], default: [] },
   },
   { _id: false },
 );
@@ -64,6 +67,11 @@ const OrderSchema = new Schema({
 OrderSchema.pre('save', function () {
   if (this.followUps && this.followUps.length > 3) {
     throw new Error('An order cannot have more than 3 follow-ups');
+  }
+  for (const p of this.products as unknown as Array<{ vendorFollowUps?: unknown[] }>) {
+    if (p.vendorFollowUps && p.vendorFollowUps.length > 5) {
+      throw new Error('Maximum 5 vendor follow-ups allowed per product');
+    }
   }
   this.updatedAt = new Date();
 });
