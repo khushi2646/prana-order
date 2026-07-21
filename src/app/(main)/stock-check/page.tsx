@@ -15,6 +15,14 @@ interface StockLine {
   substitutes: Substitute[];
 }
 
+interface AggregatedProductStockLine {
+  shape: string; size: string; colour: string;
+  requiredPieces: number; requiredWeight: number;
+  availableStock: number; shortfall: number;
+  substitutes: Substitute[];
+  refs: { productCode: string; pieces: number }[];
+}
+
 interface OrderStoneLine {
   shape?: string; size?: string; colour?: string;
   piecesPerUnit?: number; totalPieces?: number;
@@ -32,7 +40,7 @@ interface Order {
 interface OrderStockLine {
   shape: string; size: string; colour: string;
   totalRequired: number; availableStock: number; shortfall: number;
-  refs: { productCode: string; pieces: number }[];
+  refs: { orderId: string; productCode: string; pieces: number }[];
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -64,8 +72,8 @@ export default function StockCheckPage() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [query, setQuery]                     = useState('');
   const [dropdownOpen, setDropdownOpen]       = useState(false);
-  const [selected, setSelected]               = useState<Product | null>(null);
-  const [stockLines, setStockLines]           = useState<StockLine[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [stockLines, setStockLines]           = useState<AggregatedProductStockLine[]>([]);
   const [stockLoading, setStockLoading]       = useState(false);
   const [stockError, setStockError]           = useState<string | null>(null);
   const [checked, setChecked]                 = useState(false);
@@ -75,7 +83,7 @@ export default function StockCheckPage() {
   const [ordersLoading, setOrdersLoading]         = useState(false);
   const [orderQuery, setOrderQuery]               = useState('');
   const [orderDropdownOpen, setOrderDropdownOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder]         = useState<Order | null>(null);
+  const [selectedOrders, setSelectedOrders]       = useState<Order[]>([]);
   const [orderStockLines, setOrderStockLines]     = useState<OrderStockLine[]>([]);
   const [orderStockLoading, setOrderStockLoading] = useState(false);
   const [orderStockError, setOrderStockError]     = useState<string | null>(null);
@@ -100,44 +108,80 @@ export default function StockCheckPage() {
       .finally(() => setOrdersLoading(false));
   }, [mode]);
 
-  // ── Product mode: fetch stock for a single product ───────────────────
-  const fetchStock = useCallback((productId: string) => {
+  // ── Product mode: fetch + aggregate stock across all selected products ─
+  const fetchStock = useCallback((productsToCheck: Product[]) => {
+    if (productsToCheck.length === 0) { setStockLines([]); setChecked(false); return; }
     setStockLoading(true); setStockError(null); setStockLines([]); setChecked(false);
-    fetch(`/api/stock-check/${productId}`)
-      .then(r => r.ok ? r.json() : r.json().then((e: { message?: string }) => Promise.reject(e.message ?? r.statusText)))
-      .then((data: StockLine[]) => { setStockLines(data); setChecked(true); })
+    Promise.all(
+      productsToCheck.map(p =>
+        fetch(`/api/stock-check/${p._id}`)
+          .then(r => r.ok ? (r.json() as Promise<StockLine[]>) : r.json().then((e: { message?: string }) => Promise.reject(e.message ?? r.statusText)))
+          .then(lines => ({ product: p, lines }))
+      )
+    )
+      .then(results => {
+        const groupMap = new Map<string, AggregatedProductStockLine>();
+        for (const { product, lines } of results) {
+          for (const line of lines) {
+            const key = `${line.shape}|${line.size}|${line.colour}`;
+            if (!groupMap.has(key)) {
+              groupMap.set(key, {
+                shape: line.shape, size: line.size, colour: line.colour,
+                requiredPieces: 0, requiredWeight: 0,
+                availableStock: line.availableStock,
+                shortfall: 0,
+                substitutes: line.substitutes ?? [],
+                refs: [],
+              });
+            }
+            const g = groupMap.get(key)!;
+            g.requiredPieces += line.requiredPieces;
+            g.requiredWeight += line.requiredWeight;
+            if (line.requiredPieces > 0) g.refs.push({ productCode: product.designNumber, pieces: line.requiredPieces });
+          }
+        }
+        const result = Array.from(groupMap.values()).map(g => ({
+          ...g,
+          shortfall: Math.max(0, g.requiredPieces - g.availableStock),
+        }));
+        setStockLines(result);
+        setChecked(true);
+      })
       .catch((e: unknown) => setStockError(typeof e === 'string' ? e : 'Failed to load stock data.'))
       .finally(() => setStockLoading(false));
   }, []);
 
-  // ── Order mode: aggregate + check stock ─────────────────────────────
-  const fetchOrderStock = useCallback(async (order: Order) => {
+  // ── Order mode: aggregate + check stock across all selected orders ──
+  const fetchOrderStock = useCallback(async (orders: Order[]) => {
+    if (orders.length === 0) { setOrderStockLines([]); setOrderChecked(false); return; }
     setOrderStockLoading(true);
     setOrderStockError(null);
     setOrderStockLines([]);
     setOrderChecked(false);
     try {
-      // 1. Aggregate stone lines across all products, grouped by shape+size+colour
+      // 1. Aggregate stone lines across all products of all selected orders, grouped by shape+size+colour
       const groupMap = new Map<string, {
         shape: string; size: string; colour: string;
         totalRequired: number;
-        refs: { productCode: string; pieces: number }[];
+        refs: { orderId: string; productCode: string; pieces: number }[];
       }>();
 
-      for (const product of order.products) {
-        for (const sl of product.stoneLines ?? []) {
-          if (!sl.shape && !sl.size) continue;
-          const key = `${sl.shape ?? ''}|${sl.size ?? ''}|${sl.colour ?? ''}`;
-          if (!groupMap.has(key)) {
-            groupMap.set(key, {
-              shape: sl.shape ?? '', size: sl.size ?? '', colour: sl.colour ?? '',
-              totalRequired: 0, refs: [],
-            });
+      for (const order of orders) {
+        for (const product of order.products) {
+          for (const sl of product.stoneLines ?? []) {
+            if (!sl.shape && !sl.size) continue;
+            const key = `${sl.shape ?? ''}|${sl.size ?? ''}|${sl.colour ?? ''}`;
+            if (!groupMap.has(key)) {
+              groupMap.set(key, {
+                shape: sl.shape ?? '', size: sl.size ?? '', colour: sl.colour ?? '',
+                totalRequired: 0, refs: [],
+              });
+            }
+            const g   = groupMap.get(key)!;
+            const pcs = sl.totalPieces ?? 0;
+            g.totalRequired += pcs;
+            if (pcs > 0) g.refs.push({ orderId: order.orderId, productCode: product.productCode, pieces: pcs });
           }
-          const g   = groupMap.get(key)!;
-          const pcs = sl.totalPieces ?? 0;
-          g.totalRequired += pcs;
-          if (pcs > 0) g.refs.push({ productCode: product.productCode, pieces: pcs });
         }
       }
 
@@ -146,9 +190,9 @@ export default function StockCheckPage() {
         return;
       }
 
-      // 2. Fetch stock check for each unique productRef → build ledger availability map
+      // 2. Fetch stock check for each unique productRef across all orders → build ledger availability map
       const refs = [...new Set(
-        order.products.map(p => p.productRef).filter((r): r is string => !!r)
+        orders.flatMap(order => order.products.map(p => p.productRef).filter((r): r is string => !!r))
       )];
 
       const ledgerMap = new Map<string, number>(); // key → availableStock
@@ -186,52 +230,75 @@ export default function StockCheckPage() {
       setOrderStockLines(result);
       setOrderChecked(true);
     } catch (e) {
-      setOrderStockError(typeof e === 'string' ? e : 'Failed to check stock for this order.');
+      setOrderStockError(typeof e === 'string' ? e : 'Failed to check stock for these orders.');
     } finally {
       setOrderStockLoading(false);
     }
   }, []);
 
   // ── Product mode handlers ────────────────────────────────────────────
-  const handleSelect = (product: Product) => {
-    setSelected(product); setQuery(product.designNumber); setDropdownOpen(false); fetchStock(product._id);
+  const handleSelectProduct = (product: Product) => {
+    if (selectedProducts.some(p => p._id === product._id)) { setQuery(''); setDropdownOpen(false); return; }
+    const next = [...selectedProducts, product];
+    setSelectedProducts(next);
+    setQuery('');
+    setDropdownOpen(false);
+    fetchStock(next);
+  };
+  const handleRemoveProduct = (id: string) => {
+    const next = selectedProducts.filter(p => p._id !== id);
+    setSelectedProducts(next);
+    fetchStock(next);
+  };
+  const handleClearAllProducts = () => {
+    setSelectedProducts([]); setStockLines([]); setChecked(false);
   };
   const handleQueryChange = (value: string) => {
     setQuery(value); setDropdownOpen(true);
-    if (selected && value !== selected.designNumber) { setSelected(null); setStockLines([]); setChecked(false); }
   };
 
   // ── Order mode handlers ──────────────────────────────────────────────
-  const handleOrderSelect = (order: Order) => {
-    setSelectedOrder(order); setOrderQuery(order.orderId); setOrderDropdownOpen(false);
-    fetchOrderStock(order);
+  const handleSelectOrder = (order: Order) => {
+    if (selectedOrders.some(o => o._id === order._id)) { setOrderQuery(''); setOrderDropdownOpen(false); return; }
+    const next = [...selectedOrders, order];
+    setSelectedOrders(next);
+    setOrderQuery('');
+    setOrderDropdownOpen(false);
+    fetchOrderStock(next);
+  };
+  const handleRemoveOrder = (id: string) => {
+    const next = selectedOrders.filter(o => o._id !== id);
+    setSelectedOrders(next);
+    fetchOrderStock(next);
+  };
+  const handleClearAllOrders = () => {
+    setSelectedOrders([]); setOrderStockLines([]); setOrderChecked(false);
   };
   const handleOrderQueryChange = (value: string) => {
     setOrderQuery(value); setOrderDropdownOpen(true);
-    if (selectedOrder && value !== selectedOrder.orderId) {
-      setSelectedOrder(null); setOrderStockLines([]); setOrderChecked(false);
-    }
   };
 
   // ── Memos ────────────────────────────────────────────────────────────
   const filteredProducts = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q || (selected && query === selected.designNumber)) return products;
-    return products.filter(p =>
+    const q    = query.trim().toLowerCase();
+    const pool = products.filter(p => !selectedProducts.some(sp => sp._id === p._id));
+    if (!q) return pool;
+    return pool.filter(p =>
       p.designNumber.toLowerCase().includes(q) ||
       (p.category?.toLowerCase().includes(q) ?? false) ||
       (p.style?.toLowerCase().includes(q) ?? false)
     );
-  }, [products, query, selected]);
+  }, [products, query, selectedProducts]);
 
   const filteredOrders = useMemo(() => {
-    const q = orderQuery.trim().toLowerCase();
-    if (!q || (selectedOrder && orderQuery === selectedOrder.orderId)) return ordersData;
-    return ordersData.filter(o =>
+    const q    = orderQuery.trim().toLowerCase();
+    const pool = ordersData.filter(o => !selectedOrders.some(so => so._id === o._id));
+    if (!q) return pool;
+    return pool.filter(o =>
       o.orderId.toLowerCase().includes(q) ||
       o.customerName.toLowerCase().includes(q)
     );
-  }, [ordersData, orderQuery, selectedOrder]);
+  }, [ordersData, orderQuery, selectedOrders]);
 
   // ── Derived: product mode ────────────────────────────────────────────
   const totalLines   = stockLines.length;
@@ -245,25 +312,11 @@ export default function StockCheckPage() {
 
   // ── Exports ──────────────────────────────────────────────────────────
   const handleExport = () => {
-    if (!selected) return;
+    if (selectedProducts.length === 0) return;
     const lines = stockLines.filter(l => l.shortfall > 0);
     if (!lines.length) return;
-    const title   = `Stock Shortfall — ${selected.designNumber}`;
-    const divider = '─'.repeat(52);
-    const rows    = lines.map(l => `${l.shape.padEnd(10)}  ${l.size.padEnd(14)}  ${l.colour.padEnd(8)}  Need: ${l.shortfall} pcs`);
-    const content = [title, divider, ...rows, divider, `Total: ${lines.length} shortfall item${lines.length !== 1 ? 's' : ''}`].join('\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = `shortfall-${selected.designNumber}.txt`; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleOrderExport = () => {
-    if (!selectedOrder) return;
-    const lines = orderStockLines.filter(l => l.shortfall > 0);
-    if (!lines.length) return;
-    const title   = `Stock Shortfall — Order ${selectedOrder.orderId} (${selectedOrder.customerName})`;
+    const label   = selectedProducts.map(p => p.designNumber).join(', ');
+    const title   = `Stock Shortfall — ${label}`;
     const divider = '─'.repeat(60);
     const rows    = lines.map(l => {
       const refStr = l.refs.map(r => r.productCode).join(', ');
@@ -273,7 +326,26 @@ export default function StockCheckPage() {
     const blob = new Blob([content], { type: 'text/plain' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href = url; a.download = `shortfall-${selectedOrder.orderId}.txt`; a.click();
+    a.href = url; a.download = `shortfall-${selectedProducts.map(p => p.designNumber).join('_')}.txt`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleOrderExport = () => {
+    if (selectedOrders.length === 0) return;
+    const lines = orderStockLines.filter(l => l.shortfall > 0);
+    if (!lines.length) return;
+    const label   = selectedOrders.map(o => o.orderId).join(', ');
+    const title   = `Stock Shortfall — Orders ${label}`;
+    const divider = '─'.repeat(60);
+    const rows    = lines.map(l => {
+      const refStr = l.refs.map(r => `${r.orderId} · ${r.productCode}`).join(', ');
+      return `${l.shape.padEnd(10)}  ${l.size.padEnd(14)}  ${l.colour.padEnd(8)}  Need: ${l.shortfall} pcs  [${refStr}]`;
+    });
+    const content = [title, divider, ...rows, divider, `Total: ${lines.length} shortfall item${lines.length !== 1 ? 's' : ''}`].join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `shortfall-${selectedOrders.map(o => o.orderId).join('_')}.txt`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -314,13 +386,13 @@ export default function StockCheckPage() {
           {/* Product selector */}
           <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-5 mb-6">
             <label className="block text-[10px] font-bold text-[#6b6560] uppercase tracking-[0.12em] mb-2">
-              Select Product
+              Select Products
             </label>
             <div className="relative max-w-sm">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><SearchIcon /></span>
               <input
                 type="text"
-                placeholder={productsLoading ? 'Loading products…' : 'Search by design number, category, style…'}
+                placeholder={productsLoading ? 'Loading products…' : 'Search products by design number...'}
                 value={query} disabled={productsLoading}
                 onChange={e => handleQueryChange(e.target.value)}
                 onFocus={() => setDropdownOpen(true)}
@@ -331,10 +403,8 @@ export default function StockCheckPage() {
               {dropdownOpen && filteredProducts.length > 0 && (
                 <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#ddd5c8] rounded-xl shadow-[0_8px_24px_rgba(26,26,26,0.12)]">
                   {filteredProducts.map(p => (
-                    <button key={p._id} onMouseDown={() => handleSelect(p)}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl ${
-                        selected?._id === p._id ? 'bg-brand/8 text-brand' : 'hover:bg-[#f8f5f0] text-[#1a1a1a]'
-                      }`}>
+                    <button key={p._id} onMouseDown={() => handleSelectProduct(p)}
+                      className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl hover:bg-[#f8f5f0] text-[#1a1a1a]">
                       <span className="font-semibold">{p.designNumber}</span>
                       {(p.category || p.style) && (
                         <span className="text-[#6b6560] text-xs">{[p.category, p.style].filter(Boolean).join(' · ')}</span>
@@ -350,7 +420,31 @@ export default function StockCheckPage() {
                 </div>
               )}
             </div>
+
+            {selectedProducts.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {selectedProducts.map(p => (
+                  <span key={p._id} className="bg-[#456158]/10 text-[#456158] border border-[#456158]/20 rounded-full px-3 py-1 text-sm flex items-center gap-1">
+                    {p.designNumber}
+                    <button type="button" onClick={() => handleRemoveProduct(p._id)} className="hover:text-red-500 transition-colors leading-none" aria-label={`Remove ${p.designNumber}`}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+                {selectedProducts.length > 1 && (
+                  <button type="button" onClick={handleClearAllProducts} className="text-sm text-[#456158] hover:underline">
+                    Clear All
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+
+          {selectedProducts.length === 0 && !stockLoading && !stockError && (
+            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex items-center justify-center h-40">
+              <p className="text-sm text-[#6b6560]">Search and select products to check stock</p>
+            </div>
+          )}
 
           {stockLoading && (
             <div className="flex items-center justify-center h-48">
@@ -362,7 +456,7 @@ export default function StockCheckPage() {
           )}
           {!stockLoading && !stockError && checked && totalLines === 0 && (
             <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex flex-col items-center justify-center h-40 gap-1 text-[#6b6560]">
-              <p className="text-sm font-medium">No stone lines on this product.</p>
+              <p className="text-sm font-medium">No stone lines on the selected products.</p>
               <p className="text-xs">Add stone lines on the product detail page first.</p>
             </div>
           )}
@@ -390,8 +484,8 @@ export default function StockCheckPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-[#f0ebe3] border-b border-[#e0d8ce]">
-                      {['Shape', 'Size', 'Colour', 'Req. Pcs', 'Req. Wt (ct)', 'In Stock', 'Shortfall'].map((col, i) => (
-                        <th key={col} className={`px-5 py-3 text-[11px] font-semibold text-[#6b6560] uppercase tracking-wider ${i >= 3 ? 'text-right' : 'text-left'}`}>
+                      {['Shape', 'Size', 'Colour', 'Req. Pcs', 'Req. Wt (ct)', 'In Stock', 'Shortfall', 'References'].map((col, i) => (
+                        <th key={col} className={`px-5 py-3 text-[11px] font-semibold text-[#6b6560] uppercase tracking-wider ${i >= 3 && i <= 6 ? 'text-right' : 'text-left'}`}>
                           {col}
                         </th>
                       ))}
@@ -420,10 +514,13 @@ export default function StockCheckPage() {
                                 <span className={`font-bold ${none ? 'text-red-600' : 'text-orange-500'}`}>−{line.shortfall}</span>
                               )}
                             </td>
+                            <td className="px-5 py-3.5 text-xs text-[#6b6560]">
+                              {line.refs.map(r => `${r.productCode} (${r.pieces} pcs)`).join(', ')}
+                            </td>
                           </tr>
                           {!ok && subs.length > 0 && (
                             <tr className="bg-[#fdf8ee] border-b border-[#f0e4b0]">
-                              <td colSpan={7} className="px-5 py-2 pl-10">
+                              <td colSpan={8} className="px-5 py-2 pl-10">
                                 <div className="flex items-center flex-wrap gap-1.5">
                                   <span className="text-[11px] font-semibold text-[#8a6c1a] shrink-0">Substitutes available:</span>
                                   {subs.map((s, j) => (
@@ -455,13 +552,13 @@ export default function StockCheckPage() {
           {/* Order selector */}
           <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-5 mb-6">
             <label className="block text-[10px] font-bold text-[#6b6560] uppercase tracking-[0.12em] mb-2">
-              Select Order
+              Select Orders
             </label>
             <div className="relative max-w-sm">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><SearchIcon /></span>
               <input
                 type="text"
-                placeholder={ordersLoading ? 'Loading orders…' : 'Search by order number or customer name…'}
+                placeholder={ordersLoading ? 'Loading orders…' : 'Search orders by ID or customer name...'}
                 value={orderQuery} disabled={ordersLoading}
                 onChange={e => handleOrderQueryChange(e.target.value)}
                 onFocus={() => setOrderDropdownOpen(true)}
@@ -472,10 +569,8 @@ export default function StockCheckPage() {
               {orderDropdownOpen && filteredOrders.length > 0 && (
                 <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#ddd5c8] rounded-xl shadow-[0_8px_24px_rgba(26,26,26,0.12)]">
                   {filteredOrders.map(o => (
-                    <button key={o._id} onMouseDown={() => handleOrderSelect(o)}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl ${
-                        selectedOrder?._id === o._id ? 'bg-brand/8 text-brand' : 'hover:bg-[#f8f5f0] text-[#1a1a1a]'
-                      }`}>
+                    <button key={o._id} onMouseDown={() => handleSelectOrder(o)}
+                      className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl hover:bg-[#f8f5f0] text-[#1a1a1a]">
                       <span className="font-semibold">{o.orderId}</span>
                       <span className="text-[#6b6560] text-xs">{o.customerName}</span>
                       <span className="text-[#6b6560] text-xs ml-auto">
@@ -492,12 +587,30 @@ export default function StockCheckPage() {
                 </div>
               )}
             </div>
+
+            {selectedOrders.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {selectedOrders.map(o => (
+                  <span key={o._id} className="bg-[#456158]/10 text-[#456158] border border-[#456158]/20 rounded-full px-3 py-1 text-sm flex items-center gap-1">
+                    {o.orderId}
+                    <button type="button" onClick={() => handleRemoveOrder(o._id)} className="hover:text-red-500 transition-colors leading-none" aria-label={`Remove ${o.orderId}`}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+                {selectedOrders.length > 1 && (
+                  <button type="button" onClick={handleClearAllOrders} className="text-sm text-[#456158] hover:underline">
+                    Clear All
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* No order selected */}
-          {!selectedOrder && !orderStockLoading && !orderStockError && (
+          {selectedOrders.length === 0 && !orderStockLoading && !orderStockError && (
             <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex items-center justify-center h-40">
-              <p className="text-sm text-[#6b6560]">Select an order to check its diamond requirements</p>
+              <p className="text-sm text-[#6b6560]">Search and select orders to check stock</p>
             </div>
           )}
 
@@ -514,11 +627,11 @@ export default function StockCheckPage() {
             <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{orderStockError}</div>
           )}
 
-          {/* No stone lines on this order */}
+          {/* No stone lines on these orders */}
           {!orderStockLoading && !orderStockError && orderChecked && orderTotalLines === 0 && (
             <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex flex-col items-center justify-center h-40 gap-1 text-[#6b6560]">
-              <p className="text-sm font-medium">No diamond requirements logged for this order yet.</p>
-              <p className="text-xs">Add stone lines to products in this order first.</p>
+              <p className="text-sm font-medium">No diamond requirements logged for the selected orders yet.</p>
+              <p className="text-xs">Add stone lines to products in these orders first.</p>
             </div>
           )}
 
@@ -533,7 +646,7 @@ export default function StockCheckPage() {
                   stone {orderTotalLines === 1 ? 'type' : 'types'} fully in stock
                   {orderInStockCount === orderTotalLines && (
                     <span className="ml-2 text-emerald-600 text-xs font-medium">
-                      — All diamond requirements for this order are in stock
+                      — All diamond requirements for these orders are in stock
                     </span>
                   )}
                 </p>
@@ -579,14 +692,14 @@ export default function StockCheckPage() {
                               )}
                             </td>
                             <td className="px-5 py-3 text-xs text-[#6b6560]">
-                              {line.refs.map(r => r.productCode).join(', ')}
+                              {line.refs.map(r => `${r.orderId} · ${r.productCode}`).join(', ')}
                             </td>
                           </tr>
                           {/* Product contribution sub-row */}
                           <tr className="bg-[#fafaf8]">
                             <td colSpan={7} className="pl-10 pr-5 py-1.5">
                               <p className="text-xs text-[#6b6560]">
-                                {line.refs.map(r => `${r.productCode} — ${r.pieces} pcs`).join('  |  ')}
+                                {line.refs.map(r => `${r.orderId} · ${r.productCode} (${r.pieces} pcs)`).join(', ')}
                               </p>
                             </td>
                           </tr>
