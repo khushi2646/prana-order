@@ -784,6 +784,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           {!editing && (
             <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => window.open(`/orders/${id}/print`, '_blank')}
+                className="text-sm border border-[#ddd5c8] rounded-lg px-3 py-1.5 text-[#6b6560] hover:bg-[#f8f5f0] transition-colors">
+                Print Summary
+              </button>
               <button onClick={handleDeleteOrder} disabled={deleting}
                 className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
                 {deleting ? 'Deleting…' : 'Delete Order'}
