@@ -398,6 +398,94 @@ function CategoryField({ category, onSave }: {
   );
 }
 
+// ── Design number field ──────────────────────────────────────────────────────
+
+function buildQueueCode(designNumber: string, categoryCode?: string, styleCode?: string): string {
+  return [designNumber, categoryCode, styleCode].filter(Boolean).join('-');
+}
+
+function DesignNumberField({ designNumber, queueCode, categoryCode, styleCode, productId, onSave }: {
+  designNumber: string;
+  queueCode?: string;
+  categoryCode?: string;
+  styleCode?: string;
+  productId: string;
+  onSave: (v: { designNumber: string; queueCode: string }) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEdit() { setDraft(designNumber); setEditing(true); setErr(null); }
+
+  const draftQueueCode = buildQueueCode(draft, categoryCode, styleCode);
+
+  async function save() {
+    setErr(null);
+    const trimmed = draft.trim();
+    if (!trimmed) { setErr('Design number is required.'); return; }
+
+    setSaving(true);
+    try {
+      if (trimmed !== designNumber) {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(trimmed)}`);
+        if (res.ok) {
+          const data = await res.json() as { products: { _id: string; designNumber: string }[] };
+          const duplicate = data.products.some(p => p.designNumber === trimmed && p._id !== productId);
+          if (duplicate) {
+            setErr(`Design number ${trimmed} is already in use — please choose a different one.`);
+            return;
+          }
+        }
+      }
+      await onSave({ designNumber: trimmed, queueCode: buildQueueCode(trimmed, categoryCode, styleCode) });
+      setEditing(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  if (editing) {
+    return (
+      <div className="flex-1 min-w-0 max-w-xs">
+        <div className="flex items-center gap-1.5">
+          <input ref={inputRef} type="text" value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+            className="flex-1 min-w-0 rounded-lg border border-brand/30 px-2.5 py-1.5 text-sm text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+          />
+          <button onClick={save} disabled={saving}
+            className="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand/90 disabled:opacity-50 shrink-0 transition-colors">
+            {saving ? <Spinner /> : <CheckIcon />}
+          </button>
+          <button onClick={() => setEditing(false)}
+            className="w-7 h-7 rounded-lg border border-[#ddd5c8] text-[#6b6560] flex items-center justify-center hover:bg-[#f0ebe3] shrink-0 transition-colors">
+            <XSmall />
+          </button>
+        </div>
+        <p className="text-sm font-mono text-[#6b6560]/60 mt-1">{draftQueueCode || '—'}</p>
+        {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={startEdit}
+      className="flex items-center gap-3 hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors">
+      <h1 className="text-2xl font-bold text-[#1a1a1a] tracking-tight">{designNumber}</h1>
+      {queueCode && (
+        <span className="text-sm font-mono text-[#6b6560]/60">{queueCode}</span>
+      )}
+    </button>
+  );
+}
+
 // ── Style field ───────────────────────────────────────────────────────────────
 
 function StyleField({ style, category, onSave }: {
@@ -1493,10 +1581,14 @@ async function submitVersion(draft: VersionDraft) {
         </Link>
 
         <div className="flex-1 flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl font-bold text-[#1a1a1a] tracking-tight">{product.designNumber}</h1>
-          {product.queueCode && (
-            <span className="text-sm font-mono text-[#6b6560]/60">{product.queueCode}</span>
-          )}
+          <DesignNumberField
+            designNumber={product.designNumber}
+            queueCode={product.queueCode}
+            categoryCode={product.categoryCode}
+            styleCode={product.styleCode}
+            productId={product._id}
+            onSave={async v => { await putField({ designNumber: v.designNumber, queueCode: v.queueCode }); }}
+          />
           <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[product.status] ?? 'bg-[#f0ebe3] text-[#6b6560]'}`}>
             {product.status}
           </span>
