@@ -40,6 +40,7 @@ interface Order {
 interface OrderStockLine {
   shape: string; size: string; colour: string;
   totalRequired: number; availableStock: number; shortfall: number;
+  substitutes: Substitute[];
   refs: { orderId: string; productCode: string; pieces: number }[];
 }
 
@@ -200,6 +201,7 @@ export default function StockCheckPage() {
       )];
 
       const ledgerMap = new Map<string, number>(); // key → availableStock
+      const ledgerEntries: { shape: string; size: string; colour: string; availableStock: number }[] = [];
 
       if (refs.length > 0) {
         const results = await Promise.all(
@@ -212,7 +214,10 @@ export default function StockCheckPage() {
         for (const lines of results) {
           for (const line of lines) {
             const key = `${line.shape}|${line.size}|${line.colour}`;
-            if (!ledgerMap.has(key)) ledgerMap.set(key, line.availableStock);
+            if (!ledgerMap.has(key)) {
+              ledgerMap.set(key, line.availableStock);
+              ledgerEntries.push({ shape: line.shape, size: line.size, colour: line.colour, availableStock: line.availableStock });
+            }
           }
         }
       }
@@ -222,11 +227,17 @@ export default function StockCheckPage() {
       for (const [key, g] of groupMap.entries()) {
         const available = ledgerMap.get(key) ?? 0;
         const shortfall = Math.max(0, g.totalRequired - available);
+        const substitutes = shortfall > 0
+          ? ledgerEntries
+              .filter(e => e.shape === g.shape && e.colour === g.colour && e.size !== g.size && e.availableStock > 0)
+              .map(e => ({ sizeStr: e.size, availableStock: e.availableStock }))
+          : [];
         result.push({
           shape: g.shape, size: g.size, colour: g.colour,
           totalRequired: g.totalRequired,
           availableStock: available,
           shortfall,
+          substitutes,
           refs: g.refs,
         });
       }
@@ -679,6 +690,7 @@ export default function StockCheckPage() {
                       const none     = line.availableStock <= 0;
                       const rowCls   = ok ? 'bg-emerald-50/60' : none ? 'bg-red-50/70' : 'bg-orange-50/60';
                       const stockCls = ok ? 'text-emerald-600 font-semibold' : none ? 'text-red-600 font-semibold' : 'text-orange-500 font-semibold';
+                      const subs     = line.substitutes ?? [];
                       return (
                         <Fragment key={i}>
                           {/* Summary row */}
@@ -699,6 +711,21 @@ export default function StockCheckPage() {
                               {line.refs.map(r => `${r.orderId} · ${r.productCode}`).join(', ')}
                             </td>
                           </tr>
+                          {!ok && subs.length > 0 && (
+                            <tr className="bg-[#fdf8ee] border-b border-[#f0e4b0]">
+                              <td colSpan={7} className="px-5 py-2 pl-10">
+                                <div className="flex items-center flex-wrap gap-1.5">
+                                  <span className="text-[11px] font-semibold text-[#8a6c1a] shrink-0">Substitutes available:</span>
+                                  {subs.map((s, j) => (
+                                    <span key={j} className="inline-flex items-center gap-1 text-[11px] bg-[#fef3c7] border border-[#fde68a] rounded-full px-2.5 py-0.5 text-[#92400e]">
+                                      <span className="font-mono font-bold">{line.shape} {s.sizeStr}</span>
+                                      <span className="text-[#b45309]">— {s.availableStock} pcs</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                           {/* Product contribution sub-row */}
                           <tr className="bg-[#fafaf8]">
                             <td colSpan={7} className="pl-10 pr-5 py-1.5">
