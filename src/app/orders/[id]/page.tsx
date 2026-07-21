@@ -127,6 +127,13 @@ const STAGE_CONFIG: { value: Stage; label: string }[] = [
   { value: 'order_received',      label: 'Received'      },
 ];
 
+const STAGE_BADGE: Record<Stage, string> = {
+  cad:                 'bg-purple-100 text-purple-700',
+  diamond_procurement: 'bg-blue-100 text-blue-700',
+  manufacturing:       'bg-amber-100 text-amber-700',
+  order_received:      'bg-green-100 text-green-700',
+};
+
 const GOLD_COLOURS: { value: GoldColour; label: string }[] = [
   { value: 'yellow', label: 'Yellow' },
   { value: 'white',  label: 'White'  },
@@ -605,6 +612,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   // Add product drawer
   const [drawerOpen, setDrawerOpen]   = useState(false);
 
+  // Print selection modal
+  const [printModalOpen, setPrintModalOpen]                 = useState(false);
+  const [selectedPrintProducts, setSelectedPrintProducts]   = useState<string[]>([]);
+
   // CAD map: productRef → { cadImageUrl, category, style }
   const [cadMap, setCadMap] = useState<Record<string, { cadImageUrl: string; category: string; style: string }>>({});
 
@@ -670,6 +681,25 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       setDeleteError(err instanceof Error ? err.message : 'Failed to delete order');
       setDeleting(false);
     }
+  }
+
+  // ── Print selection ─────────────────────────────────────────────────────────
+
+  function togglePrintProduct(code: string) {
+    setSelectedPrintProducts(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+  }
+
+  function toggleAllPrintProducts() {
+    if (!order) return;
+    setSelectedPrintProducts(prev =>
+      prev.length === order.products.length ? [] : order.products.map(p => p.productCode)
+    );
+  }
+
+  function generatePrintSummary() {
+    const query = selectedPrintProducts.map(encodeURIComponent).join(',');
+    window.open(`/orders/${id}/print?products=${query}`, '_blank');
+    setPrintModalOpen(false);
   }
 
   // ── Header edit ─────────────────────────────────────────────────────────────
@@ -784,7 +814,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           {!editing && (
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => window.open(`/orders/${id}/print`, '_blank')}
+              <button onClick={() => { setSelectedPrintProducts(order.products.map(p => p.productCode)); setPrintModalOpen(true); }}
                 className="text-sm border border-[#ddd5c8] rounded-lg px-3 py-1.5 text-[#6b6560] hover:bg-[#f8f5f0] transition-colors">
                 Print Summary
               </button>
@@ -1038,6 +1068,62 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         onClose={() => setDrawerOpen(false)}
         onSuccess={fetchOrder}
       />
+
+      {/* ── Print selection modal ─────────────────────────────────────────── */}
+      {printModalOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setPrintModalOpen(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl p-6 w-[480px] max-h-[80vh] overflow-y-auto z-50">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-playfair text-xl font-semibold text-[#1a1a1a]">Select Products for Summary</h2>
+              <button type="button" onClick={() => setPrintModalOpen(false)}
+                className="text-[#6b6560] hover:text-[#1a1a1a] text-xl leading-none">×</button>
+            </div>
+
+            <button type="button" onClick={toggleAllPrintProducts}
+              className="text-sm text-[#456158] hover:underline mb-2">
+              {selectedPrintProducts.length === order.products.length ? 'Deselect All' : 'Select All'}
+            </button>
+
+            <div>
+              {order.products.map((product, i) => (
+                <label key={i} className="flex items-center gap-3 py-3 border-b border-[#f0ebe3] last:border-0 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-[#456158]"
+                    checked={selectedPrintProducts.includes(product.productCode)}
+                    onChange={() => togglePrintProduct(product.productCode)}
+                  />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm text-[#1a1a1a]">
+                      {product.isVendorProduct
+                        ? `${(product.vendorDescription ?? product.productCode).slice(0, 40)}${(product.vendorDescription ?? '').length > 40 ? '…' : ''}`
+                        : product.productCode}
+                    </span>
+                    {product.isVendorProduct && (
+                      <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full">Vendor</span>
+                    )}
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STAGE_BADGE[product.stage] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {STAGE_CONFIG.find(s => s.value === product.stage)?.label ?? product.stage}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button type="button" onClick={() => setPrintModalOpen(false)}
+                className="flex-1 text-[#6b6560] border border-[#ddd5c8] rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#f0ebe3] transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={generatePrintSummary} disabled={selectedPrintProducts.length === 0}
+                className="flex-1 bg-[#456158] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#3a5049] transition-colors disabled:opacity-50">
+                Generate Summary
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

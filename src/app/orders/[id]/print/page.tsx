@@ -1,6 +1,7 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { Suspense, use, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,7 +47,17 @@ const goldColourBadge: Record<string, string> = {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function OrderPrintPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-white"><p className="text-[#6b6560]">Loading…</p></div>}>
+      <OrderPrintContent params={params} />
+    </Suspense>
+  );
+}
+
+function OrderPrintContent({ params }: { params: Promise<{ id: string }> }) {
+  const { id }      = use(params);
+  const searchParams = useSearchParams();
+  const productsParam = searchParams.get('products');
 
   const [order, setOrder]     = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,6 +113,10 @@ export default function OrderPrintPage({ params }: { params: Promise<{ id: strin
     return <div className="flex items-center justify-center min-h-screen bg-white"><p className="text-[#6b6560]">Order not found.</p></div>;
   }
 
+  const displayedProducts = productsParam
+    ? order.products.filter(p => productsParam.split(',').includes(p.productCode))
+    : order.products;
+
   return (
     <div className="print-page min-h-screen bg-white p-8">
       <style>{`
@@ -156,7 +171,7 @@ export default function OrderPrintPage({ params }: { params: Promise<{ id: strin
           </tr>
         </thead>
         <tbody>
-          {order.products.map((product, i) => {
+          {displayedProducts.map((product, i) => {
             const catEntry = product.productRef ? catalogueMap[product.productRef] : undefined;
             const cadImageUrl = catEntry?.cadImageUrl ?? '';
             const refImageUrl = product.isVendorProduct
