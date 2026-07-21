@@ -170,10 +170,14 @@ export default function StockCheckPage() {
         for (const product of order.products) {
           for (const sl of product.stoneLines ?? []) {
             if (!sl.shape && !sl.size) continue;
-            const key = `${sl.shape ?? ''}|${sl.size ?? ''}|${sl.colour ?? ''}`;
+            const rawSize = sl.size ?? '';
+            const normSize = (sl.shape ?? '').toUpperCase() === 'ROUND'
+              ? rawSize.split(/x/i)[0]
+              : rawSize;
+            const key = `${sl.shape ?? ''}|${normSize}|${sl.colour ?? ''}`;
             if (!groupMap.has(key)) {
               groupMap.set(key, {
-                shape: sl.shape ?? '', size: sl.size ?? '', colour: sl.colour ?? '',
+                shape: sl.shape ?? '', size: normSize, colour: sl.colour ?? '',
                 totalRequired: 0, refs: [],
               });
             }
