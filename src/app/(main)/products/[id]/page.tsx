@@ -120,25 +120,27 @@ function fmtField(v: unknown): string {
   return String(v);
 }
 
-function parseSizeStr(size?: string) {
+function parseSizeStr(size?: string, shape?: string) {
   if (!size) return { len: '', wid: '' };
   const x = size.indexOf('X');
+  if (shape === 'ROUND') return { len: x !== -1 ? size.slice(0, x) : size, wid: '' };
   return x !== -1 ? { len: size.slice(0, x), wid: size.slice(x + 1) } : { len: size, wid: '' };
 }
 
-function formatSizeStr(len: string, wid: string): string | undefined {
+function formatSizeStr(len: string, wid: string, shape?: string): string | undefined {
   if (!len) return undefined;
   const l = parseFloat(len).toFixed(2);
+  if (shape === 'ROUND') return l;
   return wid ? `${l}X${parseFloat(wid).toFixed(2)}` : l;
 }
 
 function toLocalLine(sl: StoneLine): LocalLine {
-  const { len, wid } = parseSizeStr(sl.size);
+  const { len, wid } = parseSizeStr(sl.size, sl.shape);
   return { stoneType: sl.stoneType ?? '', shape: sl.shape ?? '', sizeLength: len, sizeWidth: wid, colour: sl.colour ?? 'WHITE', count: sl.count, totalWeight: sl.totalWeight, setting: sl.setting ?? '', remarks: sl.remarks ?? '' };
 }
 
 function fromLocalLine(ll: LocalLine): StoneLine {
-  return { stoneType: ll.stoneType || undefined, shape: ll.shape || undefined, size: formatSizeStr(ll.sizeLength, ll.sizeWidth), colour: ll.colour || 'WHITE', count: ll.count, totalWeight: ll.totalWeight, setting: ll.setting || undefined, remarks: ll.remarks || undefined };
+  return { stoneType: ll.stoneType || undefined, shape: ll.shape || undefined, size: formatSizeStr(ll.sizeLength, ll.sizeWidth, ll.shape), colour: ll.colour || 'WHITE', count: ll.count, totalWeight: ll.totalWeight, setting: ll.setting || undefined, remarks: ll.remarks || undefined };
 }
 
 // ── Size selector ─────────────────────────────────────────────────────────────
@@ -765,11 +767,15 @@ function StoneLineRowEdit({
         </td>
         <td className={td}>
           <div className="flex items-center gap-0.5">
-            <input type="number" min="0" step="0.01" placeholder="L" className={`${inp} ${w.sz}`}
+            <input type="number" min="0" step="0.01" placeholder={sl.shape === 'ROUND' ? 'Size' : 'L'} className={`${inp} ${w.sz}`}
               value={sl.sizeLength} onChange={e => onUpdate(i, 'sizeLength', e.target.value)} />
-            <span className="text-gray-300 text-[10px] px-0.5">×</span>
-            <input type="number" min="0" step="0.01" placeholder="W" className={`${inp} ${w.sz}`}
-              value={sl.sizeWidth} onChange={e => onUpdate(i, 'sizeWidth', e.target.value)} />
+            {sl.shape !== 'ROUND' && (
+              <>
+                <span className="text-gray-300 text-[10px] px-0.5">×</span>
+                <input type="number" min="0" step="0.01" placeholder="W" className={`${inp} ${w.sz}`}
+                  value={sl.sizeWidth} onChange={e => onUpdate(i, 'sizeWidth', e.target.value)} />
+              </>
+            )}
           </div>
           {gauge && (
             <p className="text-[10px] text-gray-400 mt-0.5">{gauge.caratPerStone} ct/stone</p>

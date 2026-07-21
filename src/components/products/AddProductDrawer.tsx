@@ -228,13 +228,17 @@ function StoneLineRowAdd({
         </td>
         <td className={cell}>
           <div className="flex items-center gap-0.5">
-            <input type="number" min="0" step="0.01" placeholder="L"
+            <input type="number" min="0" step="0.01" placeholder={sl.shape === 'ROUND' ? 'Size' : 'L'}
               className="w-[48px] rounded border border-gray-200 px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand/25 focus:border-brand"
               value={sl.sizeLength} onChange={e => onUpdate(i, 'sizeLength', e.target.value)} />
-            <span className="text-gray-300 text-[10px] px-0.5">×</span>
-            <input type="number" min="0" step="0.01" placeholder="W"
-              className="w-[48px] rounded border border-gray-200 px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand/25 focus:border-brand"
-              value={sl.sizeWidth} onChange={e => onUpdate(i, 'sizeWidth', e.target.value)} />
+            {sl.shape !== 'ROUND' && (
+              <>
+                <span className="text-gray-300 text-[10px] px-0.5">×</span>
+                <input type="number" min="0" step="0.01" placeholder="W"
+                  className="w-[48px] rounded border border-gray-200 px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand/25 focus:border-brand"
+                  value={sl.sizeWidth} onChange={e => onUpdate(i, 'sizeWidth', e.target.value)} />
+              </>
+            )}
           </div>
           {gauge && (
             <p className="text-[10px] text-gray-400 mt-0.5">{gauge.caratPerStone} ct/stone</p>
@@ -411,9 +415,11 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
               stoneType:   l.stoneType,
               shape:       l.shape || undefined,
               size:        l.sizeLength
-                ? (l.sizeWidth
-                    ? `${parseFloat(l.sizeLength).toFixed(2)}X${parseFloat(l.sizeWidth).toFixed(2)}`
-                    : parseFloat(l.sizeLength).toFixed(2))
+                ? (l.shape === 'ROUND'
+                    ? parseFloat(l.sizeLength).toFixed(2)
+                    : (l.sizeWidth
+                        ? `${parseFloat(l.sizeLength).toFixed(2)}X${parseFloat(l.sizeWidth).toFixed(2)}`
+                        : parseFloat(l.sizeLength).toFixed(2)))
                 : undefined,
               colour:      l.colour || 'WHITE',
               count:       l.count ? parseInt(l.count) : undefined,
