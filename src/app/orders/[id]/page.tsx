@@ -488,11 +488,11 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
                 </span>
               </>
             )}
-            {product.goldColour && (
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[product.goldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
-                {product.goldColour}
+            {(product.goldColours ?? []).map(c => (
+              <span key={c} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[c as GoldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
+                {c}
               </span>
-            )}
+            ))}
           </>
         )}
         {product.goldCarat && (
