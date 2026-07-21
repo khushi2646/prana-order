@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, Fragment } from 'react';
+import * as XLSX from 'xlsx';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -326,42 +327,55 @@ export default function StockCheckPage() {
   const orderHasShortfall = orderStockLines.some(l => l.shortfall > 0);
 
   // ── Exports ──────────────────────────────────────────────────────────
+  const EXPORT_COLS = [{ wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 50 }];
+
   const handleExport = () => {
     if (selectedProducts.length === 0) return;
     const lines = stockLines.filter(l => l.shortfall > 0);
     if (!lines.length) return;
-    const label   = selectedProducts.map(p => p.designNumber).join(', ');
-    const title   = `Stock Shortfall — ${label}`;
-    const divider = '─'.repeat(60);
-    const rows    = lines.map(l => {
-      const refStr = l.refs.map(r => r.productCode).join(', ');
-      return `${l.shape.padEnd(10)}  ${l.size.padEnd(14)}  ${l.colour.padEnd(8)}  Need: ${l.shortfall} pcs  [${refStr}]`;
-    });
-    const content = [title, divider, ...rows, divider, `Total: ${lines.length} shortfall item${lines.length !== 1 ? 's' : ''}`].join('\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = `shortfall-${selectedProducts.map(p => p.designNumber).join('_')}.txt`; a.click();
-    URL.revokeObjectURL(url);
+
+    const header = ['Shape', 'Size', 'Colour', 'Required', 'In Stock', 'Shortfall', 'References'];
+    const rows = lines.map(l => [
+      l.shape,
+      l.size,
+      l.colour,
+      l.requiredPieces,
+      l.availableStock,
+      l.shortfall,
+      l.refs.map(r => `${r.productCode} (${r.pieces} pcs)`).join(', '),
+    ]);
+
+    const sheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    sheet['!cols'] = EXPORT_COLS;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Shortfall');
+    XLSX.writeFile(workbook, `stock-shortfall-products-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleOrderExport = () => {
     if (selectedOrders.length === 0) return;
     const lines = orderStockLines.filter(l => l.shortfall > 0);
     if (!lines.length) return;
-    const label   = selectedOrders.map(o => o.orderId).join(', ');
-    const title   = `Stock Shortfall — Orders ${label}`;
-    const divider = '─'.repeat(60);
-    const rows    = lines.map(l => {
-      const refStr = l.refs.map(r => `${r.orderId} · ${r.productCode}`).join(', ');
-      return `${l.shape.padEnd(10)}  ${l.size.padEnd(14)}  ${l.colour.padEnd(8)}  Need: ${l.shortfall} pcs  [${refStr}]`;
-    });
-    const content = [title, divider, ...rows, divider, `Total: ${lines.length} shortfall item${lines.length !== 1 ? 's' : ''}`].join('\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = `shortfall-${selectedOrders.map(o => o.orderId).join('_')}.txt`; a.click();
-    URL.revokeObjectURL(url);
+
+    const label  = selectedOrders.map(o => o.orderId).join(', ');
+    const header = ['Shape', 'Size', 'Colour', 'Required', 'In Stock', 'Shortfall', 'References'];
+    const rows = lines.map(l => [
+      l.shape,
+      l.size,
+      l.colour,
+      l.totalRequired,
+      l.availableStock,
+      l.shortfall,
+      l.refs.map(r => `${r.orderId} · ${r.productCode} (${r.pieces} pcs)`).join(', '),
+    ]);
+
+    const sheet = XLSX.utils.aoa_to_sheet([[`Orders: ${label}`], header, ...rows]);
+    sheet['!cols'] = EXPORT_COLS;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Shortfall');
+    XLSX.writeFile(workbook, `stock-shortfall-orders-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   // ── Render ───────────────────────────────────────────────────────────
