@@ -106,6 +106,17 @@ function OrderPrintContent({ params }: { params: Promise<{ id: string }> }) {
     });
   }, [order]);
 
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        nav, aside, [class*="sidebar"], [class*="Sidebar"] { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-white"><p className="text-[#6b6560]">Loading…</p></div>;
   }
@@ -122,7 +133,8 @@ function OrderPrintContent({ params }: { params: Promise<{ id: string }> }) {
       <style>{`
         @media print {
           @page { margin: 1cm; }
-          body { font-size: 11pt; }
+          body { font-size: 11pt; margin: 0; }
+          nav, aside { display: none !important; }
           .no-print { display: none !important; }
           .print-page { padding: 0 !important; }
           .print-table, .print-table * { box-shadow: none !important; }
