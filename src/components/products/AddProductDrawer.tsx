@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import ShapeComboInput from '@/components/ShapeComboInput';
 
 // ── Category / style map ──────────────────────────────────────────────────────
 
@@ -77,7 +78,6 @@ function SizeSelector({ category, value, onChange }: {
 
 const STATUSES = ['Pending', 'Needs Manual Check', 'Hold', 'Rejected', 'Approved'];
 const STONE_TYPES = ['Diamond', 'Colourstone', 'Colored Diamond', 'Pearl'];
-const SHAPES = ['ROUND','PEAR','MARQUISE','OVAL','PRINCESS','CUSHION','EMERALD','RADIANT','BAGUETTE','HEART','TRILLION','LOZENGE'] as const;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -219,12 +219,8 @@ function StoneLineRowAdd({
             {STONE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </td>
-        <td className={cell}>
-          <select value={sl.shape} onChange={e => onUpdate(i, 'shape', e.target.value)}
-            className="w-[110px] rounded border border-gray-200 px-1.5 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-brand/25 focus:border-brand">
-            <option value="">—</option>
-            {SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+        <td className={`${cell} w-[110px]`}>
+          <ShapeComboInput value={sl.shape} onChange={v => onUpdate(i, 'shape', v)} />
         </td>
         <td className={cell}>
           <div className="flex items-center gap-0.5">

@@ -63,6 +63,7 @@ export interface IProduct extends Document {
   stoneLines: IStoneLine[];
   versions: IVersion[];
   changelog: IChangelog[];
+  linkedProducts?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -148,6 +149,8 @@ const ProductSchema = new Schema<IProduct>(
     stoneLines: [StoneLineSchema],
     versions:   [VersionSchema],
     changelog:  [ChangelogSchema],
+
+    linkedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: [] }],
   },
   { timestamps: true }
 );

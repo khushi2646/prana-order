@@ -15,7 +15,9 @@ export async function GET(_request: NextRequest, { params }: Ctx) {
     const product = await Product.findById(id);
     if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
 
-    return NextResponse.json(product);
+    const productObj = product.toObject();
+    if (!productObj.linkedProducts) productObj.linkedProducts = [];
+    return NextResponse.json(productObj);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return NextResponse.json({ message }, { status: 500 });

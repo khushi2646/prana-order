@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import ShapeComboInput from '@/components/ShapeComboInput';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -98,8 +99,7 @@ function StoneLinesTable({ lines, qty, onChange }: {
                 return (
                   <tr key={i}>
                     <td className="px-1 py-1">
-                      <input className="w-full px-1.5 py-1 text-xs border border-[#ddd5c8] rounded focus:outline-none focus:border-[#456158]"
-                        placeholder="ROUND" value={sl.shape} onChange={e => upd(i, 'shape', e.target.value)} />
+                      <ShapeComboInput value={sl.shape} onChange={v => upd(i, 'shape', v)} placeholder="ROUND" />
                     </td>
                     <td className="px-1 py-1">
                       <input className="w-full px-1.5 py-1 text-xs border border-[#ddd5c8] rounded focus:outline-none focus:border-[#456158]"

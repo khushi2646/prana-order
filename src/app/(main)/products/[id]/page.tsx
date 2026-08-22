@@ -2,6 +2,8 @@
 
 import { use, useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import ShapeComboInput from '@/components/ShapeComboInput';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,6 +48,7 @@ interface Product {
   stoneLines: StoneLine[];
   versions: ProductVersion[];
   changelog: ChangelogEntry[];
+  linkedProducts?: string[];
 }
 
 interface LocalLine {
@@ -69,6 +72,14 @@ const STATUS_STYLE: Record<string, string> = {
   'Hold':               'bg-yellow-50 text-yellow-700 border border-yellow-200',
   'Rejected':           'bg-red-50 text-red-600 border border-red-200',
   'Approved':           'bg-emerald-50 text-emerald-700 border border-emerald-200',
+};
+
+const STATUS_DOT: Record<string, string> = {
+  'Pending':            'bg-gray-400',
+  'Needs Manual Check': 'bg-yellow-400',
+  'Hold':               'bg-yellow-400',
+  'Rejected':           'bg-red-400',
+  'Approved':           'bg-emerald-400',
 };
 
 const STATUSES = ['Pending', 'Needs Manual Check', 'Hold', 'Rejected', 'Approved'];
@@ -296,54 +307,119 @@ function Field({ label, display, editValue, onSave, inputType = 'text', step, pl
   );
 }
 
-// ── Select field ──────────────────────────────────────────────────────────────
+// ── Status badge (inline dropdown) ────────────────────────────────────────────
 
-function SelectField({ label, display, value, options, onSave }: {
-  label: string; display: string; value: string;
-  options: { value: string; label: string }[];
+function StatusBadge({ status, onSave }: {
+  status: string;
   onSave: (v: string) => Promise<void>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState(status);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  function startEdit() { setDraft(value); setEditing(true); setErr(null); }
+  useEffect(() => { setCurrent(status); }, [status]);
 
-  async function save() {
-    setSaving(true); setErr(null);
-    try { await onSave(draft); setEditing(false); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Save failed'); }
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
+
+  async function choose(s: string) {
+    setOpen(false);
+    if (s === current) return;
+    const prev = current;
+    setCurrent(s);
+    setSaving(true);
+    try { await onSave(s); }
+    catch { setCurrent(prev); }
     finally { setSaving(false); }
   }
 
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-[#f8f5f0] last:border-0">
-      <span className="w-44 shrink-0 text-xs text-[#6b6560] pt-1">{label}</span>
-      {editing ? (
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <select value={draft} onChange={e => setDraft(e.target.value)} autoFocus
-              className="flex-1 rounded-lg border border-brand/30 px-2.5 py-1.5 text-sm bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand">
-              {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <button onClick={save} disabled={saving}
-              className="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand/90 disabled:opacity-50 shrink-0 transition-colors">
-              {saving ? <Spinner /> : <CheckIcon />}
+    <div className="relative" ref={containerRef}>
+      <button type="button" onClick={() => setOpen(o => !o)} disabled={saving}
+        className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full transition-opacity disabled:opacity-60 ${STATUS_STYLE[current] ?? 'bg-[#f0ebe3] text-[#6b6560]'}`}>
+        {current}
+        <ChevronDown open={open} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 min-w-[200px] bg-white rounded-xl shadow-lg border border-[#f0ebe3] py-1">
+          {STATUSES.map(s => (
+            <button key={s} type="button" onClick={() => choose(s)}
+              className="w-full px-4 py-2.5 text-sm hover:bg-[#f8f5f0] cursor-pointer flex items-center gap-2 text-left">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[s] ?? 'bg-gray-400'}`} />
+              <span className="flex-1 text-[#1a1a1a]">{s}</span>
+              {s === current && <CheckIcon />}
             </button>
-            <button onClick={() => setEditing(false)}
-              className="w-7 h-7 rounded-lg border border-[#ddd5c8] text-[#6b6560] flex items-center justify-center hover:bg-[#f0ebe3] shrink-0 transition-colors">
-              <XSmall />
-            </button>
-          </div>
-          {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+          ))}
         </div>
-      ) : (
-        <button onClick={startEdit}
-          className="flex-1 text-left text-sm text-[#1a1a1a] hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
-          {display}
-        </button>
       )}
+    </div>
+  );
+}
+
+// ── Delete product button ─────────────────────────────────────────────────────
+
+function DeleteProductButton({ productId }: { productId: string }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [value, setValue] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function cancel() {
+    setConfirming(false);
+    setValue('');
+    setErr(null);
+  }
+
+  async function confirmDelete() {
+    setDeleting(true); setErr(null);
+    try {
+      const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(e.message ?? 'Delete failed');
+      }
+      router.push('/products');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Delete failed');
+      setDeleting(false);
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <button type="button" onClick={() => setConfirming(true)}
+        className="text-sm text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors">
+        Delete Product
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-red-600">Type &quot;DELETE&quot; to confirm</span>
+      <div className="flex items-center gap-1.5">
+        <input type="text" value={value} onChange={e => setValue(e.target.value)} autoFocus
+          placeholder="DELETE"
+          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+        />
+        <button type="button" onClick={cancel} disabled={deleting}
+          className="text-sm text-[#6b6560] border border-[#ddd5c8] rounded-lg px-3 py-1.5 hover:bg-[#f8f5f0] disabled:opacity-50 transition-colors">
+          Cancel
+        </button>
+        <button type="button" onClick={confirmDelete} disabled={value !== 'DELETE' || deleting}
+          className="text-sm text-white bg-red-600 rounded-lg px-3 py-1.5 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5">
+          {deleting && <Spinner />} Confirm
+        </button>
+      </div>
+      {err && <p className="text-xs text-red-500">{err}</p>}
     </div>
   );
 }
@@ -758,12 +834,8 @@ function StoneLineRowEdit({
             {STONE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </td>
-        <td className={td}>
-          <select value={sl.shape} onChange={e => onUpdate(i, 'shape', e.target.value)}
-            className={`${inp} ${w.shape} bg-white`}>
-            <option value="">—</option>
-            {SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+        <td className={`${td} ${w.shape}`}>
+          <ShapeComboInput value={sl.shape} onChange={v => onUpdate(i, 'shape', v)} />
         </td>
         <td className={td}>
           <div className="flex items-center gap-0.5">
@@ -1343,6 +1415,185 @@ function AddVersionDrawer({ open, initialDraft, category, onClose, onSubmit }: {
   );
 }
 
+// ── Linked products ──────────────────────────────────────────────────────────
+
+interface LinkedProductDetail {
+  _id: string;
+  designNumber: string;
+  category?: string;
+  style?: string;
+  cadImageUrl?: string;
+}
+
+interface LinkSearchResult {
+  _id: string;
+  designNumber: string;
+  category?: string;
+  style?: string;
+  cadImageUrl?: string;
+}
+
+function LinkedProducts({ productId, linkedIds, onChange }: {
+  productId: string;
+  linkedIds: string[];
+  onChange: () => void;
+}) {
+  const router = useRouter();
+  const [details, setDetails] = useState<LinkedProductDetail[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<LinkSearchResult[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+
+  const idsKey = linkedIds.join(',');
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!idsKey) { setDetails([]); return; }
+      setLoading(true);
+      try {
+        const fetched = await Promise.all(
+          idsKey.split(',').map(async lid => {
+            const res = await fetch(`/api/products/${lid}`, { cache: 'no-store' });
+            if (!res.ok) return null;
+            const p = await res.json();
+            return { _id: p._id, designNumber: p.designNumber, category: p.category, style: p.style, cadImageUrl: p.cadImageUrl } as LinkedProductDetail;
+          })
+        );
+        if (!cancelled) setDetails(fetched.filter((d): d is LinkedProductDetail => d !== null));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [idsKey]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) setSearchOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!query.trim()) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}`);
+        if (!res.ok) return;
+        const data = await res.json() as { products: LinkSearchResult[] };
+        setResults(data.products
+          .filter(p => p._id !== productId && !linkedIds.includes(p._id))
+          .map(p => ({ _id: p._id, designNumber: p.designNumber, category: p.category, style: p.style, cadImageUrl: p.cadImageUrl })));
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, productId, idsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function link(targetId: string) {
+    setErr(null);
+    try {
+      const res = await fetch(`/api/products/${productId}/links`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetId }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Link failed');
+      setQuery(''); setResults([]); setSearchOpen(false);
+      onChange();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Link failed'); }
+  }
+
+  async function unlink(targetId: string) {
+    setErr(null);
+    try {
+      const res = await fetch(`/api/products/${productId}/links`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetId }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Unlink failed');
+      onChange();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Unlink failed'); }
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-6">
+      <h2 className="text-sm font-bold text-[#1a1a1a] mb-4">Linked Products</h2>
+
+      {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
+
+      {!loading && details.length === 0 ? (
+        <p className="text-sm text-[#6b6560] mb-4">No linked products yet</p>
+      ) : (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {details.map(d => {
+            const embed = gdEmbed(d.cadImageUrl);
+            return (
+              <div key={d._id} onClick={() => router.push(`/products/${d._id}`)}
+                className="flex items-center gap-3 bg-white border border-[#f0ebe3] rounded-xl px-3 py-2 hover:shadow-sm transition-shadow cursor-pointer">
+                {embed && (
+                  <img src={embed} alt={d.designNumber} referrerPolicy="no-referrer"
+                    className="w-10 h-10 rounded object-cover shrink-0"
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#1a1a1a] truncate">{d.designNumber}</p>
+                  <p className="text-sm text-[#6b6560] truncate">{[d.category, d.style].filter(Boolean).join(' · ') || '—'}</p>
+                </div>
+                <button type="button" onClick={e => { e.stopPropagation(); unlink(d._id); }}
+                  className="ml-1 w-5 h-5 shrink-0 rounded-full text-[#6b6560] hover:bg-[#f0ebe3] hover:text-red-500 flex items-center justify-center transition-colors">
+                  <XSmall />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="relative" ref={searchBoxRef}>
+        <input type="text" value={query}
+          onChange={e => { setQuery(e.target.value); setSearchOpen(true); }}
+          onFocus={() => setSearchOpen(true)}
+          placeholder="Search by design number to link..."
+          className="w-full rounded-lg border border-brand/30 px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+        />
+        {searchOpen && query.trim() && (
+          <div className="absolute left-0 top-full mt-1 z-50 w-full min-w-[240px] bg-white rounded-xl shadow-lg border border-[#f0ebe3] py-1 max-h-64 overflow-y-auto">
+            {searching ? (
+              <p className="px-4 py-2.5 text-sm text-[#6b6560]">Searching…</p>
+            ) : results.length === 0 ? (
+              <p className="px-4 py-2.5 text-sm text-[#6b6560]">No matches</p>
+            ) : results.map(r => (
+              <button key={r._id} type="button" onClick={() => link(r._id)}
+                className="w-full px-4 py-2.5 text-sm hover:bg-[#f8f5f0] cursor-pointer flex items-center gap-2 text-left text-[#1a1a1a]">
+                {r.cadImageUrl && (
+                  <img src={gdEmbed(r.cadImageUrl) ?? undefined} className="w-8 h-8 rounded object-cover" onError={e => e.currentTarget.style.display='none'} />
+                )}
+                <span>{[r.designNumber, r.category, r.style].filter(Boolean).join(' · ')}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -1595,10 +1846,11 @@ async function submitVersion(draft: VersionDraft) {
             productId={product._id}
             onSave={async v => { await putField({ designNumber: v.designNumber, queueCode: v.queueCode }); }}
           />
-          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[product.status] ?? 'bg-[#f0ebe3] text-[#6b6560]'}`}>
-            {product.status}
-          </span>
+          <StatusBadge status={product.status}
+            onSave={v => putField({ status: v }).then(() => {})} />
         </div>
+
+        <DeleteProductButton productId={product._id} />
 
       </div>
 
@@ -1841,13 +2093,6 @@ async function submitVersion(draft: VersionDraft) {
               editValue={slot.rhodiumInstruction ?? ''}
               onSave={v => slotSave({ rhodiumInstruction: v || undefined }).then(() => {})} />
 
-            {/* Status — V1 only */}
-            {isV1 && (
-              <SelectField label="Status" display={product.status} value={product.status}
-                options={STATUSES.map(s => ({ value: s, label: s }))}
-                onSave={v => putField({ status: v }).then(() => {})} />
-            )}
-
             <Field label="Remarks"
               display={slot.remarks || '—'}
               editValue={slot.remarks ?? ''}
@@ -1855,6 +2100,13 @@ async function submitVersion(draft: VersionDraft) {
           </div>
         </div>
       </div>
+
+      {/* ── Linked Products ───────────────────────────────────────────────── */}
+      <LinkedProducts
+        productId={product._id.toString()}
+        linkedIds={product.linkedProducts ?? []}
+        onChange={fetchProduct}
+      />
 
       {/* ── Stone Lines (tab-aware) ────────────────────────────────────────── */}
       <StoneLines

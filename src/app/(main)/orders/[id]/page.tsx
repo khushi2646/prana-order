@@ -92,7 +92,7 @@ function orderToHeaderForm(o: Order): HeaderForm {
 interface EditProductForm {
   productCode: string;
   quantity:    string;
-  goldColour:  GoldColour | '';
+  goldColours: string[];
   goldCarat:   GoldCarat  | '';
   findings:    string;
   stage:       Stage;
@@ -104,7 +104,7 @@ function productToEditForm(p: OrderProduct): EditProductForm {
   return {
     productCode: p.productCode,
     quantity:    String(p.quantity),
-    goldColour:  p.goldColour ?? '',
+    goldColours: p.goldColours ?? [],
     goldCarat:   p.goldCarat  ?? '',
     findings:    p.findings ?? '',
     stage:       p.stage,
@@ -257,7 +257,7 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
     const qty = parseInt(editForm.quantity) || 0;
     if (!editForm.productCode.trim()) { setEditError('Product Code required.'); return; }
     if (qty < 1)                      { setEditError('Quantity must be at least 1.'); return; }
-    if (!editForm.goldColour)         { setEditError('Gold Colour required.'); return; }
+    if (editForm.goldColours.length === 0) { setEditError('Gold Colour required.'); return; }
     if (!editForm.goldCarat)          { setEditError('Gold Carat required.'); return; }
 
     setSaving(true);
@@ -265,7 +265,7 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
       const body: Record<string, unknown> = {
         productCode: editForm.productCode.trim(),
         quantity:    qty,
-        goldColour:  editForm.goldColour,
+        goldColours: editForm.goldColours,
         goldCarat:   editForm.goldCarat,
         stage:       editForm.stage,
         stoneLines:  editForm.stoneLines.map(sl => ({
@@ -357,7 +357,23 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-[#6b6560] uppercase tracking-wider">Gold Colour</label>
-          <ToggleRow options={GOLD_COLOURS} value={editForm.goldColour} onChange={v => setEF('goldColour', v as GoldColour)} />
+          <div className="flex items-center gap-6">
+            {GOLD_COLOURS.map(c => (
+              <label key={c.value} className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox"
+                  checked={editForm.goldColours.includes(c.value)}
+                  onChange={e => {
+                    const next = e.target.checked
+                      ? [...editForm.goldColours, c.value]
+                      : editForm.goldColours.filter(g => g !== c.value);
+                    setEF('goldColours', next);
+                  }}
+                  className="w-4 h-4 accent-[#456158]"
+                />
+                <span className="text-sm text-[#1a1a1a]">{c.label}</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-1.5">
