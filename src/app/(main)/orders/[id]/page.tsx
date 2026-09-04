@@ -806,7 +806,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <div className="min-h-screen bg-[#f8f5f0] p-8 max-w-4xl mx-auto">
+      <div className="min-h-screen bg-[#f8f5f0] px-3 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto">
 
         {/* ── Back link ────────────────────────────────────────────────── */}
         <Link href="/orders" className="inline-flex items-center gap-1.5 text-sm text-[#6b6560] hover:text-[#1a1a1a] mb-6 group transition-colors">
@@ -817,9 +817,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </Link>
 
         {/* ── Page title ───────────────────────────────────────────────── */}
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-playfair text-3xl font-semibold text-[#1a1a1a]">
+            <h1 className="font-playfair text-2xl md:text-3xl font-semibold text-[#1a1a1a]">
               {order.orderId} — {order.customerName}
             </h1>
             {order.isUrgent && (
@@ -829,7 +829,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
           {!editing && (
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 mt-2 md:mt-0 md:shrink-0">
               <button onClick={() => { setSelectedPrintProducts(order.products.map(p => p.productCode)); setPrintModalOpen(true); }}
                 className="text-sm border border-[#ddd5c8] rounded-lg px-3 py-1.5 text-[#6b6560] hover:bg-[#f8f5f0] transition-colors">
                 Print Summary
