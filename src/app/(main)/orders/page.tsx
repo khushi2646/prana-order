@@ -428,7 +428,7 @@ export default function OrdersPage() {
         </div>
 
         {/* ── Search ────────────────────────────────────────────────────── */}
-        <div className="relative mb-4">
+        <div className="relative mb-3">
           <svg
             className="w-4 h-4 text-[#6b6560] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
@@ -450,7 +450,7 @@ export default function OrdersPage() {
         </div>
 
         {/* ── Filter bar ────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-3 sm:p-5 mb-6 flex flex-wrap gap-2 sm:gap-4 items-center">
+        <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-3 sm:p-5 mt-4 mb-6 flex flex-wrap gap-3 sm:gap-4 items-center">
           <FilterToggle
             options={[{ label: 'All', value: '' }, { label: 'Stock', value: 'stock' }, { label: 'Customer', value: 'customer' }]}
             value={typeFilter}
