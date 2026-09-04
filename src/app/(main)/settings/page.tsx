@@ -104,7 +104,7 @@ function DeleteRow({ action }: { action: DeleteAction }) {
   }
 
   return (
-    <div className="flex items-start justify-between gap-6 py-4 border-t border-red-100 first:border-t-0">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6 py-4 border-t border-red-100 first:border-t-0">
       <div className="min-w-0">
         <p className="font-semibold text-[#1a1a1a]">{action.label}</p>
         <p className="text-sm text-[#6b6560] mt-0.5">{action.description}</p>
@@ -121,12 +121,12 @@ function DeleteRow({ action }: { action: DeleteAction }) {
           <button
             type="button"
             onClick={() => { setConfirming(true); setResult(null); }}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+            className="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
           >
             Delete
           </button>
         ) : (
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-col gap-2 items-stretch sm:items-end">
             <p className="text-xs text-[#6b6560]">Type &ldquo;DELETE&rdquo; to confirm</p>
             <input
               type="text"
@@ -164,7 +164,7 @@ function DeleteRow({ action }: { action: DeleteAction }) {
 
 export default function SettingsPage() {
   return (
-    <div className="min-h-screen bg-[#f8f5f0] px-6 py-8">
+    <div className="min-h-screen bg-[#f8f5f0] px-3 sm:px-6 lg:px-8 py-8">
       <div className="max-w-3xl mx-auto">
 
         <h1 className="font-playfair text-3xl font-semibold text-[#1a1a1a] mb-8">Settings</h1>
@@ -203,7 +203,21 @@ export default function SettingsPage() {
                   >
                     <td className="px-4 py-3 font-medium text-[#1a1a1a] whitespace-nowrap">{cat.name}</td>
                     <td className="px-4 py-3 font-mono text-[#6b6560] whitespace-nowrap">{cat.code}</td>
-                    <td className="px-4 py-3 text-[#6b6560]">{cat.styles.join(', ')}</td>
+                    <td className="px-4 py-3 text-[#6b6560]">
+                      {(() => {
+                        const styleList = cat.styles.join(', ');
+                        const shortList = cat.styles.slice(0, 3).join(', ');
+                        const remaining = cat.styles.length - 3;
+                        return (
+                          <>
+                            <span className="md:hidden">
+                              {shortList}{remaining > 0 ? ` +${remaining} more` : ''}
+                            </span>
+                            <span className="hidden md:inline">{styleList}</span>
+                          </>
+                        );
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>

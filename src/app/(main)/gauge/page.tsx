@@ -156,7 +156,7 @@ export default function GaugePage() {
   const displayRows = activeTab === 'Round' ? roundEntries : fancyEntries;
 
   return (
-    <div className="p-8 space-y-5 max-w-5xl">
+    <div className="px-3 sm:px-6 lg:px-8 py-8 space-y-5 max-w-5xl">
 
       {/* Header */}
       <div className="flex items-start justify-between">
