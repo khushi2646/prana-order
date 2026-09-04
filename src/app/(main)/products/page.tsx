@@ -132,12 +132,12 @@ function ProductCard({ p }: { p: Product }) {
       className="bg-white rounded-xl overflow-hidden border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] hover:shadow-[0_10px_28px_rgba(26,26,26,0.13)] hover:-translate-y-1 transition-all duration-200 cursor-pointer group block"
     >
       {/* Thumbnail */}
-      <div className="relative h-56 overflow-hidden">
+      <div className="relative h-36 sm:h-48 overflow-hidden">
         {showImg ? (
           <img
             src={embed!} alt={p.designNumber}
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+            className="object-cover w-full h-full group-hover:scale-[1.03] transition-transform duration-300"
             onError={() => setImgFailed(true)}
             referrerPolicy="no-referrer"
           />
@@ -149,7 +149,7 @@ function ProductCard({ p }: { p: Product }) {
       {/* Card body */}
       <div className="p-4 border-t border-[#f0ebe3]">
         <div className="flex items-start justify-between gap-2 mb-1.5">
-          <span className="text-[16px] font-bold text-[#1a1a1a] leading-tight tracking-tight">
+          <span className="text-sm font-bold text-[#1a1a1a] leading-tight tracking-tight">
             {p.designNumber}
           </span>
           <span className={`shrink-0 text-[10px] font-semibold px-2.5 py-0.5 rounded-full leading-tight ${STATUS_STYLE[p.status] ?? 'bg-[#f0ebe3] text-[#6b6560] border border-[#ddd5c8]'}`}>
@@ -163,13 +163,13 @@ function ProductCard({ p }: { p: Product }) {
           </p>
         )}
         {p.queueCode && (
-          <p className="mt-1 text-[11px] font-mono text-[#6b6560]/60 tracking-wide">{p.queueCode}</p>
+          <p className="mt-1 text-xs font-mono text-[#6b6560]/60 tracking-wide hidden sm:block">{p.queueCode}</p>
         )}
         {formatSize(p.size) && (
-          <p className="mt-0.5 text-[11px] text-[#6b6560]/70">{formatSize(p.size)}</p>
+          <p className="mt-0.5 text-xs text-[#6b6560]/70">{formatSize(p.size)}</p>
         )}
         {formatGold(p.goldWeights) && (
-          <p className="mt-0.5 text-[11px] text-[#6b6560]/70">{formatGold(p.goldWeights)}</p>
+          <p className="mt-0.5 text-xs text-[#6b6560]/70">{formatGold(p.goldWeights)}</p>
         )}
       </div>
 
@@ -314,12 +314,12 @@ export default function ProductsPage() {
 
   return (
     <>
-      <div className="p-8">
+      <div className="px-3 sm:px-6 lg:px-8 py-8">
 
         {/* ── Top bar ─────────────────────────────────────────────────── */}
         <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-lg">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-lg">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><SearchIcon /></span>
               <input
                 type="text"
@@ -329,10 +329,9 @@ export default function ProductsPage() {
                 className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-[#ddd5c8] rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a]"
               />
             </div>
-            <div className="flex-1" />
             <button
               onClick={() => setDrawerOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-brand text-white text-sm font-semibold rounded-lg hover:bg-brand/90 active:bg-brand/80 transition-colors shrink-0 shadow-sm"
+              className="flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2.5 bg-brand text-white text-sm font-semibold rounded-lg hover:bg-brand/90 active:bg-brand/80 transition-colors shrink-0 shadow-sm"
             >
               <PlusIcon />
               Add Product
@@ -414,7 +413,7 @@ export default function ProductsPage() {
         {/* ── Grid ────────────────────────────────────────────────────── */}
         {!loading && !error && products.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {products.map(p => <ProductCard key={p._id} p={p} />)}
             </div>
 
