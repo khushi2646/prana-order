@@ -109,12 +109,12 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm p-5 border border-[#e8e0d4] cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+      className="bg-white rounded-xl shadow-sm px-4 py-4 sm:p-5 border border-[#e8e0d4] overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
     >
       {/* Row 1 */}
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mb-2">
         <span className="font-bold text-[#1a1a1a] text-[15px]">{order.orderId}</span>
-        <span className="text-[#1a1a1a] text-sm">{order.customerName}</span>
+        <span className="text-[#1a1a1a] text-sm truncate min-w-0">{order.customerName}</span>
         <span
           className={`ml-auto shrink-0 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
             order.orderType === 'customer'
@@ -133,7 +133,7 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
       </div>
 
       {/* Row 2 */}
-      <div className="flex items-center gap-4 text-sm mb-2">
+      <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm mb-2">
         <span>
           <span className="text-[#c9a84c] text-xs font-semibold mr-1">Delivery</span>
           <span className="text-[#1a1a1a]">{fmtDate(order.deliveryDate)}</span>
@@ -147,7 +147,7 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
       </div>
 
       {/* Row 3 — stage summary */}
-      <p className="text-[11px] text-[#6b6560] font-mono mb-1">{stageSummary(order.products)}</p>
+      <p className="text-[11px] text-[#6b6560] font-mono mb-1 overflow-hidden break-words">{stageSummary(order.products)}</p>
 
       {/* Remarks */}
       {order.remarks && (
@@ -257,18 +257,18 @@ function FilterToggle({ options, value, onChange }: {
 
 // ── Date range input ──────────────────────────────────────────────────────────
 
-const dateInp = 'px-3 py-2 text-sm bg-white border border-[#ddd5c8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors text-[#1a1a1a]';
-
 function DateRange({ label, from, to, onFrom, onTo }: {
   label: string; from: string; to: string;
   onFrom: (v: string) => void; onTo: (v: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs font-semibold text-[#6b6560] uppercase tracking-wider shrink-0">{label}</span>
-      <input type="date" className={dateInp} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-[#6b6560] text-xs">to</span>
-      <input type="date" className={dateInp} value={to} onChange={e => onTo(e.target.value)} />
+    <div>
+      <label className="block text-xs font-semibold text-[#6b6560] uppercase tracking-wider mb-1.5">{label}</label>
+      <div className="flex items-center gap-2">
+        <input type="date" className="w-full min-w-0 text-xs sm:text-sm border border-[#ddd5c8] rounded-lg px-2 py-1.5" value={from} onChange={e => onFrom(e.target.value)} />
+        <span className="text-[#6b6560] text-xs shrink-0">–</span>
+        <input type="date" className="w-full min-w-0 text-xs sm:text-sm border border-[#ddd5c8] rounded-lg px-2 py-1.5" value={to} onChange={e => onTo(e.target.value)} />
+      </div>
     </div>
   );
 }
@@ -395,14 +395,14 @@ export default function OrdersPage() {
 
   return (
     <>
-      <div className="p-8 min-h-screen bg-[#f8f5f0]">
+      <div className="px-3 sm:px-6 lg:px-8 py-8 min-h-screen bg-[#f8f5f0]">
 
         {/* ── Header ────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="font-playfair text-3xl font-semibold text-[#1a1a1a]">Orders</h1>
+        <div className="flex flex-row items-center justify-between gap-3 mb-4">
+          <h1 className="font-playfair text-2xl sm:text-3xl font-semibold text-[#1a1a1a]">Orders</h1>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-[#456158] text-white text-sm font-semibold rounded-lg hover:bg-[#3a5049] active:bg-[#304340] transition-colors shadow-sm"
+            className="flex items-center gap-1.5 shrink-0 px-4 py-2.5 bg-[#456158] text-white text-sm font-semibold rounded-lg hover:bg-[#3a5049] active:bg-[#304340] transition-colors shadow-sm"
           >
             <PlusIcon />
             New Order
@@ -428,20 +428,29 @@ export default function OrdersPage() {
         </div>
 
         {/* ── Search ────────────────────────────────────────────────────── */}
-        <input
-          type="text"
-          className="w-full rounded-xl border border-[#ddd5c8] px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a] mb-4"
-          placeholder={
-            activeTab === 'orders'
-              ? 'Search by order number, customer name or phone…'
-              : 'Search by product code, order number or customer name…'
-          }
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <div className="relative mb-4">
+          <svg
+            className="w-4 h-4 text-[#6b6560] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path strokeLinecap="round" d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            className="w-full rounded-xl border border-[#ddd5c8] pl-9 pr-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a]"
+            placeholder={
+              activeTab === 'orders'
+                ? 'Search by order number, customer name or phone…'
+                : 'Search by product code, order number or customer name…'
+            }
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
 
         {/* ── Filter bar ────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-4 mb-6 flex flex-wrap gap-4 items-center">
+        <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-3 sm:p-5 mb-6 flex flex-wrap gap-2 sm:gap-4 items-center">
           <FilterToggle
             options={[{ label: 'All', value: '' }, { label: 'Stock', value: 'stock' }, { label: 'Customer', value: 'customer' }]}
             value={typeFilter}
