@@ -555,7 +555,7 @@ function DesignNumberField({ designNumber, queueCode, categoryCode, styleCode, p
 
   return (
     <button onClick={startEdit}
-      className="flex items-center gap-3 hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors">
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors">
       <h1 className="text-2xl font-bold text-[#1a1a1a] tracking-tight">{designNumber}</h1>
       {queueCode && (
         <span className="text-sm font-mono text-[#6b6560]/60">{queueCode}</span>
@@ -967,7 +967,7 @@ function StoneLines({ initial, onSave }: { initial: StoneLine[]; onSave: (lines:
           </button>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-[#e8e0d4]">
-            <table className="w-full text-xs">
+            <table className="w-full min-w-[640px] text-xs">
               <thead>
                 <tr className="bg-[#f0ebe3] border-b border-[#e0d8ce]">
                   <th className={th}>Stone Type</th>
@@ -1012,7 +1012,7 @@ function StoneLines({ initial, onSave }: { initial: StoneLine[]; onSave: (lines:
           </button>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-[#e8e0d4]">
-            <table className="w-full text-xs">
+            <table className="w-full min-w-[760px] text-xs">
               <thead>
                 <tr className="bg-[#f0ebe3] border-b border-[#e0d8ce]">
                   <th className={th}>Stone Type</th>
@@ -1758,7 +1758,7 @@ async function submitVersion(draft: VersionDraft) {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-5 max-w-6xl animate-pulse">
+      <div className="px-3 sm:px-6 lg:px-8 py-8 space-y-5 max-w-6xl animate-pulse">
         {/* Header */}
         <div className="flex items-center gap-4">
           <div className="h-4 w-20 bg-[#f0ebe3] rounded" />
@@ -1793,7 +1793,7 @@ async function submitVersion(draft: VersionDraft) {
 
   if (fetchErr || !product) {
     return (
-      <div className="p-8">
+      <div className="px-3 sm:px-6 lg:px-8 py-8">
         <p className="text-red-600 text-sm mb-3">{fetchErr ?? 'Product not found'}</p>
         <Link href="/products" className="text-sm text-brand hover:underline">← Back to Products</Link>
       </div>
@@ -1828,16 +1828,16 @@ async function submitVersion(draft: VersionDraft) {
 
   return (
     <>
-    <div className="p-8 space-y-5 max-w-6xl">
+    <div className="px-3 sm:px-6 lg:px-8 py-8 space-y-5 max-w-6xl">
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Link href="/products"
           className="flex items-center gap-1 text-sm text-[#6b6560] hover:text-[#1a1a1a] transition-colors shrink-0">
           <ChevronLeft /> Products
         </Link>
 
-        <div className="flex-1 flex items-center gap-3 flex-wrap">
+        <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-3 gap-y-2">
           <DesignNumberField
             designNumber={product.designNumber}
             queueCode={product.queueCode}
@@ -1850,7 +1850,9 @@ async function submitVersion(draft: VersionDraft) {
             onSave={v => putField({ status: v }).then(() => {})} />
         </div>
 
-        <DeleteProductButton productId={product._id} />
+        <div className="flex flex-wrap gap-2">
+          <DeleteProductButton productId={product._id} />
+        </div>
 
       </div>
 
