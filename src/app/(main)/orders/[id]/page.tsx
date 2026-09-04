@@ -477,15 +477,15 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
         />
       )}
       {/* Edit / Remove — absolute bottom-right */}
-      <div className="absolute bottom-4 right-4 flex gap-3">
+      <div className="absolute bottom-4 right-4 flex gap-2">
         <button type="button" onClick={() => { setEditForm(productToEditForm(product)); setEditing(true); }}
-          className="text-xs text-[#456158] font-semibold hover:underline">Edit</button>
+          className="text-sm text-[#456158] font-semibold border border-[#ddd5c8] rounded-lg px-3 py-1.5 hover:bg-[#f0ebe3] transition-colors">Edit</button>
         <button type="button" onClick={removeProduct} disabled={removing}
-          className="text-xs text-red-500 font-semibold hover:underline disabled:opacity-50">
+          className="text-sm text-red-600 font-semibold border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors disabled:opacity-50">
           {removing ? 'Removing…' : 'Remove'}
         </button>
       </div>
-      {/* Top row */}
+      {/* Line 1 — code + category · style */}
       <div className="flex items-center gap-2 flex-wrap">
         {product.isVendorProduct ? (
           <>
@@ -494,11 +494,6 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
               {(product.vendorDescription ?? '').length > 40 ? '…' : ''}
             </span>
             <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full">Vendor</span>
-            {(product.goldColours ?? []).map(c => (
-              <span key={c} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[c as GoldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
-                {c}
-              </span>
-            ))}
           </>
         ) : (
           <>
@@ -511,19 +506,25 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
                 </span>
               </>
             )}
-            {(product.goldColours ?? []).map(c => (
-              <span key={c} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[c as GoldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
-                {c}
-              </span>
-            ))}
           </>
         )}
-        {product.goldCarat && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8] uppercase">
-            {product.goldCarat}
-          </span>
-        )}
       </div>
+
+      {/* Line 2 — gold colour + carat badges */}
+      {((product.goldColours ?? []).length > 0 || product.goldCarat) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {(product.goldColours ?? []).map(c => (
+            <span key={c} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${goldColourBadge[c as GoldColour] ?? 'bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8]'}`}>
+              {c}
+            </span>
+          ))}
+          {product.goldCarat && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#f0ebe3] text-[#6b6560] border-[#ddd5c8] uppercase">
+              {product.goldCarat}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Incomplete warning */}
       {isIncomplete && (
@@ -1049,30 +1050,32 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <p className="text-sm text-[#6b6560]">No diamond requirements logged yet.</p>
           ) : (
             <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-[#f8f5f0] text-[#6b6560] border-b border-[#e8e0d4]">
-                    <th className="px-4 py-3 text-left font-semibold">Shape</th>
-                    <th className="px-4 py-3 text-left font-semibold">Size</th>
-                    <th className="px-4 py-3 text-left font-semibold">Colour</th>
-                    <th className="px-4 py-3 text-right font-semibold">Total Pcs</th>
-                    <th className="px-4 py-3 text-left font-semibold">References</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0ebe3]">
-                  {diamondSummary.map((g, i) => (
-                    <tr key={i}>
-                      <td className="px-4 py-3 font-mono text-[#1a1a1a]">{g.shape || '—'}</td>
-                      <td className="px-4 py-3 font-mono text-[#1a1a1a]">{g.size  || '—'}</td>
-                      <td className="px-4 py-3 text-[#1a1a1a]">{g.colour || '—'}</td>
-                      <td className="px-4 py-3 text-right font-bold text-[#456158]">{g.totalPieces}</td>
-                      <td className="px-4 py-3 text-[#6b6560] text-xs">
-                        {g.refs.map(r => `${r.code} (${r.pieces} pcs)`).join(', ')}
-                      </td>
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-[#f8f5f0] text-[#6b6560] border-b border-[#e8e0d4]">
+                      <th className="px-4 py-3 text-left font-semibold">Shape</th>
+                      <th className="px-4 py-3 text-left font-semibold">Size</th>
+                      <th className="px-4 py-3 text-left font-semibold">Colour</th>
+                      <th className="px-4 py-3 text-right font-semibold">Total Pcs</th>
+                      <th className="px-4 py-3 text-left font-semibold">References</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#f0ebe3]">
+                    {diamondSummary.map((g, i) => (
+                      <tr key={i}>
+                        <td className="px-4 py-3 font-mono text-[#1a1a1a]">{g.shape || '—'}</td>
+                        <td className="px-4 py-3 font-mono text-[#1a1a1a]">{g.size  || '—'}</td>
+                        <td className="px-4 py-3 text-[#1a1a1a]">{g.colour || '—'}</td>
+                        <td className="px-4 py-3 text-right font-bold text-[#456158]">{g.totalPieces}</td>
+                        <td className="px-4 py-3 text-[#6b6560] text-xs">
+                          {g.refs.map(r => `${r.code} (${r.pieces} pcs)`).join(', ')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>
