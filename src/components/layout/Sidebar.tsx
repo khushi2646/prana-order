@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 function GemIcon({ className }: { className?: string }) {
   return (
@@ -56,6 +57,14 @@ function CogIcon({ className }: { className?: string }) {
   );
 }
 
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
 const NAV = [
   { href: '/products',    label: 'Products',    Icon: CubeIcon           },
   { href: '/orders',      label: 'Orders',      Icon: ClipboardIcon      },
@@ -65,9 +74,12 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return (
-    <aside className="w-60 flex-shrink-0 bg-[#1a1a1a] flex flex-col h-full min-h-screen">
+  const closeMobile = () => setMobileOpen(false);
+
+  const panel = (
+    <>
       {/* Logo */}
       <div className="px-4 py-5 border-b border-white/[0.07] flex justify-center">
         <img src="/prana_logo.png" alt="Prana" style={{ width: '120px' }} />
@@ -83,6 +95,7 @@ export default function Sidebar() {
               <Link
                 key={href}
                 href={href}
+                onClick={closeMobile}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? 'bg-brand text-[#f5f0e8] shadow-sm'
@@ -102,6 +115,7 @@ export default function Sidebar() {
             return (
               <Link
                 href="/settings"
+                onClick={closeMobile}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? 'bg-brand text-[#f5f0e8] shadow-sm'
@@ -120,6 +134,45 @@ export default function Sidebar() {
       <div className="px-5 py-4 border-t border-white/[0.07]">
         <p className="text-[#f5f0e8]/20 text-[11px]">Prana Order &copy; 2026</p>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#1a1a1a] px-4 py-3 flex items-center justify-between">
+        <img src="/prana_logo.png" alt="Prana" style={{ width: '96px' }} />
+        <button
+          type="button"
+          aria-label="Toggle menu"
+          onClick={() => setMobileOpen((open) => !open)}
+          className="p-1 text-[#f5f0e8]"
+        >
+          <MenuIcon className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Mobile overlay */}
+      <div
+        onClick={closeMobile}
+        className={`md:hidden fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${
+          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      />
+
+      {/* Mobile slide-in menu */}
+      <aside
+        className={`md:hidden fixed top-0 left-0 z-50 w-60 h-full flex flex-col bg-[#1a1a1a] transition-transform duration-300 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {panel}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex md:flex-col w-60 flex-shrink-0 bg-[#1a1a1a] h-full min-h-screen">
+        {panel}
+      </aside>
+    </>
   );
 }
