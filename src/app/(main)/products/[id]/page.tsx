@@ -555,10 +555,10 @@ function DesignNumberField({ designNumber, queueCode, categoryCode, styleCode, p
 
   return (
     <button onClick={startEdit}
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors">
-      <h1 className="text-2xl font-bold text-[#1a1a1a] tracking-tight">{designNumber}</h1>
+      className="flex flex-col items-start gap-0.5 hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors">
+      <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">{designNumber}</h1>
       {queueCode && (
-        <span className="text-sm font-mono text-[#6b6560]/60">{queueCode}</span>
+        <span className="text-xs font-mono text-[#6b6560] mt-0.5">{queueCode}</span>
       )}
     </button>
   );
@@ -1831,29 +1831,31 @@ async function submitVersion(draft: VersionDraft) {
     <div className="px-3 sm:px-6 lg:px-8 py-8 space-y-5 max-w-6xl">
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Link href="/products"
-          className="flex items-center gap-1 text-sm text-[#6b6560] hover:text-[#1a1a1a] transition-colors shrink-0">
-          <ChevronLeft /> Products
-        </Link>
+      <div className="mb-6">
+        {/* Back link */}
+        <div className="mb-2">
+          <Link href="/products"
+            className="inline-flex items-center gap-1 text-sm text-[#6b6560] hover:text-[#1a1a1a] transition-colors">
+            <ChevronLeft /> Products
+          </Link>
+        </div>
 
-        <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <DesignNumberField
-            designNumber={product.designNumber}
-            queueCode={product.queueCode}
-            categoryCode={product.categoryCode}
-            styleCode={product.styleCode}
-            productId={product._id}
-            onSave={async v => { await putField({ designNumber: v.designNumber, queueCode: v.queueCode }); }}
-          />
+        {/* Title + queue code (inline editable) */}
+        <DesignNumberField
+          designNumber={product.designNumber}
+          queueCode={product.queueCode}
+          categoryCode={product.categoryCode}
+          styleCode={product.styleCode}
+          productId={product._id}
+          onSave={async v => { await putField({ designNumber: v.designNumber, queueCode: v.queueCode }); }}
+        />
+
+        {/* Actions row */}
+        <div className="flex flex-wrap items-center gap-2 mt-3">
           <StatusBadge status={product.status}
             onSave={v => putField({ status: v }).then(() => {})} />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
           <DeleteProductButton productId={product._id} />
         </div>
-
       </div>
 
       {/* ── Version tab bar ───────────────────────────────────────────────── */}
