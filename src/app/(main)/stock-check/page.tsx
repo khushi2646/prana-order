@@ -381,7 +381,7 @@ export default function StockCheckPage() {
   // ── Render ───────────────────────────────────────────────────────────
 
   return (
-    <div className="p-8">
+    <div className="px-3 sm:px-6 lg:px-8 py-8">
 
       {/* ── Page header ─────────────────────────────────────────────── */}
       <div className="mb-4">
@@ -514,7 +514,7 @@ export default function StockCheckPage() {
                   <thead>
                     <tr className="bg-[#f0ebe3] border-b border-[#e0d8ce]">
                       {['Shape', 'Size', 'Colour', 'Req. Pcs', 'Req. Wt (ct)', 'In Stock', 'Shortfall', 'References'].map((col, i) => (
-                        <th key={col} className={`px-5 py-3 text-[11px] font-semibold text-[#6b6560] uppercase tracking-wider ${i >= 3 && i <= 6 ? 'text-right' : 'text-left'}`}>
+                        <th key={col} className={`px-4 py-3 text-xs font-semibold text-[#6b6560] uppercase tracking-wider ${i >= 3 && i <= 6 ? 'text-right' : 'text-left'}`}>
                           {col}
                         </th>
                       ))}
@@ -530,27 +530,27 @@ export default function StockCheckPage() {
                       return (
                         <Fragment key={i}>
                           <tr className={rowCls}>
-                            <td className="px-5 py-3.5 font-mono text-xs font-bold text-[#1a1a1a]">{line.shape}</td>
-                            <td className="px-5 py-3.5 font-mono text-xs text-[#6b6560]">{line.size}</td>
-                            <td className="px-5 py-3.5 text-xs text-[#6b6560]">{line.colour}</td>
-                            <td className="px-5 py-3.5 text-xs text-right text-[#1a1a1a]">{line.requiredPieces}</td>
-                            <td className="px-5 py-3.5 text-xs text-right text-[#1a1a1a]">{line.requiredWeight.toFixed(2)}</td>
-                            <td className={`px-5 py-3.5 text-xs text-right ${stockCls}`}>{line.availableStock}</td>
-                            <td className="px-5 py-3.5 text-xs text-right">
+                            <td className="px-4 py-3 font-mono text-sm font-medium text-[#1a1a1a]">{line.shape}</td>
+                            <td className="px-4 py-3 font-mono text-sm font-medium text-[#6b6560]">{line.size}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-[#6b6560]">{line.colour}</td>
+                            <td className="px-4 py-3 text-xs text-right text-[#1a1a1a]">{line.requiredPieces}</td>
+                            <td className="px-4 py-3 text-xs text-right text-[#1a1a1a]">{line.requiredWeight.toFixed(2)}</td>
+                            <td className={`px-4 py-3 text-xs text-right ${stockCls}`}>{line.availableStock}</td>
+                            <td className="px-4 py-3 text-xs text-right">
                               {ok ? (
                                 <span className="text-emerald-600 font-bold">✓</span>
                               ) : (
                                 <span className={`font-bold ${none ? 'text-red-600' : 'text-orange-500'}`}>−{line.shortfall}</span>
                               )}
                             </td>
-                            <td className="px-5 py-3.5 text-xs text-[#6b6560]">
+                            <td className="px-4 py-3 text-xs text-[#6b6560]">
                               {line.refs.map(r => `${r.productCode} (${r.pieces} pcs)`).join(', ')}
                             </td>
                           </tr>
                           {!ok && subs.length > 0 && (
                             <tr className="bg-[#fdf8ee] border-b border-[#f0e4b0]">
                               <td colSpan={8} className="px-5 py-2 pl-10">
-                                <div className="flex items-center flex-wrap gap-1.5">
+                                <div className="flex flex-wrap gap-1.5">
                                   <span className="text-[11px] font-semibold text-[#8a6c1a] shrink-0">Substitutes available:</span>
                                   {subs.map((s, j) => (
                                     <span key={j} className="inline-flex items-center gap-1 text-[11px] bg-[#fef3c7] border border-[#fde68a] rounded-full px-2.5 py-0.5 text-[#92400e]">
@@ -692,7 +692,7 @@ export default function StockCheckPage() {
                   <thead>
                     <tr className="bg-[#f0ebe3] border-b border-[#e0d8ce]">
                       {['Shape', 'Size', 'Colour', 'Required', 'In Stock', 'Shortfall', 'References'].map((col, i) => (
-                        <th key={col} className={`px-5 py-3 text-[11px] font-semibold text-[#6b6560] uppercase tracking-wider ${i >= 3 && i <= 5 ? 'text-right' : 'text-left'}`}>
+                        <th key={col} className={`px-4 py-3 text-xs font-semibold text-[#6b6560] uppercase tracking-wider ${i >= 3 && i <= 5 ? 'text-right' : 'text-left'}`}>
                           {col}
                         </th>
                       ))}
@@ -709,26 +709,26 @@ export default function StockCheckPage() {
                         <Fragment key={i}>
                           {/* Summary row */}
                           <tr className={rowCls}>
-                            <td className="px-5 py-3 font-mono text-xs font-bold text-[#1a1a1a]">{line.shape || '—'}</td>
-                            <td className="px-5 py-3 font-mono text-xs text-[#6b6560]">{line.size || '—'}</td>
-                            <td className="px-5 py-3 text-xs text-[#6b6560]">{line.colour || '—'}</td>
-                            <td className="px-5 py-3 text-xs text-right text-[#1a1a1a]">{line.totalRequired}</td>
-                            <td className={`px-5 py-3 text-xs text-right ${stockCls}`}>{line.availableStock}</td>
-                            <td className="px-5 py-3 text-xs text-right">
+                            <td className="px-4 py-3 font-mono text-sm font-medium text-[#1a1a1a]">{line.shape || '—'}</td>
+                            <td className="px-4 py-3 font-mono text-sm font-medium text-[#6b6560]">{line.size || '—'}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-[#6b6560]">{line.colour || '—'}</td>
+                            <td className="px-4 py-3 text-xs text-right text-[#1a1a1a]">{line.totalRequired}</td>
+                            <td className={`px-4 py-3 text-xs text-right ${stockCls}`}>{line.availableStock}</td>
+                            <td className="px-4 py-3 text-xs text-right">
                               {ok ? (
                                 <span className="text-emerald-600 font-bold">✓</span>
                               ) : (
                                 <span className={`font-bold ${none ? 'text-red-600' : 'text-orange-500'}`}>−{line.shortfall}</span>
                               )}
                             </td>
-                            <td className="px-5 py-3 text-xs text-[#6b6560]">
+                            <td className="px-4 py-3 text-xs text-[#6b6560]">
                               {line.refs.map(r => `${r.orderId} · ${r.productCode}`).join(', ')}
                             </td>
                           </tr>
                           {!ok && subs.length > 0 && (
                             <tr className="bg-[#fdf8ee] border-b border-[#f0e4b0]">
                               <td colSpan={7} className="px-5 py-2 pl-10">
-                                <div className="flex items-center flex-wrap gap-1.5">
+                                <div className="flex flex-wrap gap-1.5">
                                   <span className="text-[11px] font-semibold text-[#8a6c1a] shrink-0">Substitutes available:</span>
                                   {subs.map((s, j) => (
                                     <span key={j} className="inline-flex items-center gap-1 text-[11px] bg-[#fef3c7] border border-[#fde68a] rounded-full px-2.5 py-0.5 text-[#92400e]">
@@ -743,7 +743,7 @@ export default function StockCheckPage() {
                           {/* Product contribution sub-row */}
                           <tr className="bg-[#fafaf8]">
                             <td colSpan={7} className="pl-10 pr-5 py-1.5">
-                              <p className="text-xs text-[#6b6560]">
+                              <p className="text-sm text-[#1a1a1a] py-1">
                                 {line.refs.map(r => `${r.orderId} · ${r.productCode} (${r.pieces} pcs)`).join(', ')}
                               </p>
                             </td>
