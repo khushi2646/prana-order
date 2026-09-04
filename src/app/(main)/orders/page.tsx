@@ -147,7 +147,7 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
       </div>
 
       {/* Row 3 — stage summary */}
-      <p className="text-[11px] text-[#6b6560] font-mono mb-1 overflow-hidden break-words">{stageSummary(order.products)}</p>
+      <p className="text-sm text-[#6b6560] font-mono mb-1 overflow-hidden break-words">{stageSummary(order.products)}</p>
 
       {/* Remarks */}
       {order.remarks && (
