@@ -30,8 +30,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const count    = await Order.countDocuments();
-    const orderId  = `ORD-${String(count + 1).padStart(3, '0')}`;
+    const allOrders = await Order.find({}, { orderId: 1 }).lean();
+    const maxNum = allOrders.reduce((max, o) => {
+      const num = parseInt((o.orderId as string)?.replace('ORD-', '') ?? '0');
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    const nextNum = maxNum + 1;
+    const orderId = `ORD-${String(nextNum).padStart(3, '0')}`;
 
     const order = await Order.create({ ...body, orderId });
     return NextResponse.json(order, { status: 201 });
