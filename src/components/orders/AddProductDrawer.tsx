@@ -239,6 +239,7 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
     setShowDropdown(false);
     setCatalogueSearch(partial.designNumber);
     setSelectedProduct(partial);
+    setForm(prev => ({ ...prev, productCode: partial.designNumber }));
     resetVersionState();
 
     try {
@@ -249,7 +250,7 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
       // Default: use base product stone lines
       setForm(prev => ({
         ...prev,
-        productCode: prev.productCode || full.designNumber,
+        productCode: full.designNumber,
         stoneLines:  toLocalLines(full.stoneLines),
       }));
     } catch { /* ignore — partial product still set */ }
@@ -827,6 +828,13 @@ export default function AddProductToOrderDrawer({ open, orderId, onClose, onSucc
                   </span>
                 )}
               </div>
+            ) : selectedProduct ? (
+              <input
+                className={`${inp} bg-[#f8f5f0] opacity-70 cursor-not-allowed`}
+                type="text"
+                value={form.productCode}
+                readOnly
+              />
             ) : (
               <input className={inp} type="text" placeholder="e.g. P200"
                 value={form.productCode} onChange={e => set('productCode', e.target.value)} />
