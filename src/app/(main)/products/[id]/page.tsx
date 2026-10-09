@@ -16,6 +16,14 @@ interface ChangelogEntry {
   field: string; oldValue?: unknown; newValue?: unknown; changedAt: string;
 }
 
+interface ManufacturingRun {
+  runNumber: number;
+  orderId?: string;
+  orderMongoId?: string;
+  productCode?: string;
+  createdAt?: string;
+}
+
 interface GoldWeights {
   nineKt?: number;
   fourteenKt?: number;
@@ -49,6 +57,7 @@ interface Product {
   versions: ProductVersion[];
   changelog: ChangelogEntry[];
   linkedProducts?: string[];
+  manufacturingRuns?: ManufacturingRun[];
 }
 
 interface LocalLine {
@@ -890,6 +899,65 @@ function StoneLineRowEdit({
         </tr>
       )}
     </>
+  );
+}
+
+// ── Manufacturing runs ────────────────────────────────────────────────────────
+
+function fmtRunDate(d?: string): string {
+  if (!d) return '—';
+  const date = new Date(d);
+  const day   = String(date.getDate()).padStart(2, '0');
+  const month = date.toLocaleDateString('en-IN', { month: 'short' });
+  return `${day} ${month} ${date.getFullYear()}`;
+}
+
+function fmtRunNumber(designNumber: string, runNumber: number): string {
+  return `${designNumber}-${String(runNumber).padStart(3, '0')}`;
+}
+
+function ManufacturingRuns({ runs, designNumber }: { runs: ManufacturingRun[]; designNumber: string }) {
+  const sorted = [...runs].sort((a, b) => b.runNumber - a.runNumber);
+  const th  = 'px-2.5 py-2.5 text-left text-[11px] font-semibold text-[#6b6560] uppercase tracking-wider whitespace-nowrap';
+  const tdR = 'px-2.5 py-3 text-sm text-[#1a1a1a]';
+
+  return (
+    <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-6">
+      <h2 className="text-sm font-bold text-[#1a1a1a] mb-4">Manufacturing Runs</h2>
+
+      {sorted.length === 0 ? (
+        <p className="text-sm text-[#6b6560]">No manufacturing runs logged yet.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-[#e8e0d4]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#f0ebe3] border-b border-[#e0d8ce]">
+                <th className={th}>Run #</th>
+                <th className={th}>Order</th>
+                <th className={th}>Product Code</th>
+                <th className={th}>Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0ebe3]">
+              {sorted.map((run, i) => (
+                <tr key={i} className="hover:bg-[#f8f5f0]/60">
+                  <td className={`${tdR} font-mono`}>{fmtRunNumber(designNumber, run.runNumber)}</td>
+                  <td className={tdR}>
+                    {run.orderId && run.orderMongoId ? (
+                      <Link href={`/orders/${run.orderMongoId}`} className="text-[#456158] underline">
+                        {run.orderId}
+                      </Link>
+                    ) : (run.orderId || '—')}
+                  </td>
+                  <td className={tdR}>{run.productCode || '—'}</td>
+                  <td className={tdR}>{fmtRunDate(run.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2129,6 +2197,9 @@ async function submitVersion(draft: VersionDraft) {
         linkedIds={product.linkedProducts ?? []}
         onChange={fetchProduct}
       />
+
+      {/* ── Manufacturing Runs ───────────────────────────────────────────────── */}
+      <ManufacturingRuns runs={product.manufacturingRuns ?? []} designNumber={product.designNumber} />
 
       {/* ── Stone Lines (tab-aware) ────────────────────────────────────────── */}
       <StoneLines

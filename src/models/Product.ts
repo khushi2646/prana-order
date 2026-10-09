@@ -41,6 +41,14 @@ export interface IChangelog {
   changedAt: Date;
 }
 
+export interface IManufacturingRun {
+  runNumber: number;
+  orderId?: string;
+  orderMongoId?: string;
+  productCode?: string;
+  createdAt?: string;
+}
+
 export interface IProduct extends Document {
   designNumber: string;
   category?: string;
@@ -64,6 +72,7 @@ export interface IProduct extends Document {
   versions: IVersion[];
   changelog: IChangelog[];
   linkedProducts?: string[];
+  manufacturingRuns?: IManufacturingRun[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,6 +119,14 @@ const ChangelogSchema = new Schema<IChangelog>(
   { _id: false }
 );
 
+const ManufacturingRunSchema = new Schema<IManufacturingRun>({
+  runNumber:    { type: Number, required: true },
+  orderId:      { type: String },
+  orderMongoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  productCode:  { type: String },
+  createdAt:    { type: Date, default: Date.now },
+});
+
 // ── Product schema ────────────────────────────────────────────────────────────
 
 const ProductSchema = new Schema<IProduct>(
@@ -151,6 +168,8 @@ const ProductSchema = new Schema<IProduct>(
     changelog:  [ChangelogSchema],
 
     linkedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: [] }],
+
+    manufacturingRuns: { type: [ManufacturingRunSchema], default: [] },
   },
   { timestamps: true }
 );

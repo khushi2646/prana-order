@@ -211,7 +211,7 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
   index:     number;
   orderId:   string;
   onRefresh: () => void;
-  cadEntry?: { cadImageUrl: string; category: string; style: string };
+  cadEntry?: { cadImageUrl: string; category: string; style: string; runCount: number };
 }) {
   const thumbUrl = cadEntry?.cadImageUrl ?? '';
   const cardRouter = useRouter();
@@ -512,6 +512,13 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
         )}
       </div>
 
+      {/* Current manufacturing run number */}
+      {cadEntry && cadEntry.runCount > 0 && (
+        <p className="text-xs text-[#6b6560]">
+          Run {product.productCode}-{String(cadEntry.runCount).padStart(3, '0')}
+        </p>
+      )}
+
       {/* Line 2 — gold colour + carat badges */}
       {((product.goldColours ?? []).length > 0 || product.goldCarat) && (
         <div className="flex items-center gap-2 flex-wrap">
@@ -635,8 +642,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [printModalOpen, setPrintModalOpen]                 = useState(false);
   const [selectedPrintProducts, setSelectedPrintProducts]   = useState<string[]>([]);
 
-  // CAD map: productRef → { cadImageUrl, category, style }
-  const [cadMap, setCadMap] = useState<Record<string, { cadImageUrl: string; category: string; style: string }>>({});
+  // CAD map: productRef → { cadImageUrl, category, style, runCount }
+  const [cadMap, setCadMap] = useState<Record<string, { cadImageUrl: string; category: string; style: string; runCount: number }>>({});
 
   // Delete order
   const [deleting, setDeleting]       = useState(false);
@@ -671,13 +678,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           .catch(() => null)
       )
     ).then(results => {
-      const map: Record<string, { cadImageUrl: string; category: string; style: string }> = {};
+      const map: Record<string, { cadImageUrl: string; category: string; style: string; runCount: number }> = {};
       refs.forEach((ref, i) => {
         if (results[i]) {
           map[ref] = {
             cadImageUrl: results[i].cadImageUrl ?? '',
             category:    results[i].category    ?? '',
             style:       results[i].style        ?? '',
+            runCount:    results[i].manufacturingRuns?.length ?? 0,
           };
         }
       });

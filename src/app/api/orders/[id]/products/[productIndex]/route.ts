@@ -44,6 +44,22 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     order.markModified('products');
     await order.save();
 
+    // Fire-and-forget: log a manufacturing run when a product enters the manufacturing stage
+    if (body.stage === 'manufacturing' && product.productRef) {
+      const origin = request.nextUrl.origin;
+      fetch(`${origin}/api/products/${product.productRef}/manufacturing-runs`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          orderId:      order.orderId,
+          orderMongoId: order._id,
+          productCode:  product.productCode,
+        }),
+      }).catch(err => {
+        console.error('Failed to log manufacturing run:', err);
+      });
+    }
+
     return NextResponse.json(order);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bad request';
