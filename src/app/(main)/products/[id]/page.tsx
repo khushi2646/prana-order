@@ -794,64 +794,34 @@ function DistinctivenessField({ value, onSave }: {
   value?: number | null;
   onSave: (v: number | null) => Promise<void>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft]     = useState<number | null>(null);
-  const [saving, setSaving]   = useState(false);
-  const [err, setErr]         = useState<string | null>(null);
+  const [current, setCurrent] = useState<number | null>(value ?? null);
+  const [savingN, setSavingN] = useState<number | null>(null);
 
-  function startEdit() { setDraft(value ?? null); setEditing(true); setErr(null); }
+  useEffect(() => { setCurrent(value ?? null); }, [value]);
 
-  function pick(n: number) {
-    setDraft(prev => prev === n ? null : n);
-  }
-
-  async function save() {
-    setSaving(true); setErr(null);
-    try { await onSave(draft); setEditing(false); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Save failed'); }
-    finally { setSaving(false); }
+  async function pick(n: number) {
+    const next = current === n ? null : n;
+    const prev = current;
+    setCurrent(next);
+    setSavingN(n);
+    try { await onSave(next); }
+    catch { setCurrent(prev); }
+    finally { setSavingN(null); }
   }
 
   return (
     <div className="flex items-start gap-3 py-2.5 border-b border-[#f8f5f0] last:border-0">
       <span className="w-44 shrink-0 text-xs text-[#6b6560] pt-1">Distinctiveness</span>
-      {editing ? (
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5].map(n => (
-              <button key={n} type="button" onClick={() => pick(n)}
-                className={`w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center transition-colors ${
-                  draft === n ? 'bg-[#456158] text-white' : 'border border-[#ddd5c8] text-[#6b6560] hover:bg-[#f0ebe3]'
-                }`}>
-                {n}
-              </button>
-            ))}
-            <button onClick={save} disabled={saving}
-              className="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand/90 disabled:opacity-50 shrink-0 transition-colors ml-2">
-              {saving ? <Spinner /> : <CheckIcon />}
-            </button>
-            <button onClick={() => setEditing(false)}
-              className="w-7 h-7 rounded-lg border border-[#ddd5c8] text-[#6b6560] flex items-center justify-center hover:bg-[#f0ebe3] shrink-0 transition-colors">
-              <XSmall />
-            </button>
-          </div>
-          {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
-        </div>
-      ) : (
-        <button onClick={startEdit}
-          className="flex-1 text-left hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
-          <span className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5].map(n => (
-              <span key={n}
-                className={`w-6 h-6 rounded-full text-xs font-semibold flex items-center justify-center ${
-                  value === n ? 'bg-[#456158] text-white' : 'border border-[#ddd5c8] text-[#6b6560]'
-                }`}>
-                {n}
-              </span>
-            ))}
-          </span>
-        </button>
-      )}
+      <div className="flex items-center gap-1.5">
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} type="button" onClick={() => pick(n)} disabled={savingN !== null}
+            className={`w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center transition-colors ${savingN === n ? 'opacity-50' : ''} ${
+              current === n ? 'bg-[#456158] text-white' : 'border border-[#ddd5c8] text-[#6b6560] hover:bg-[#f0ebe3]'
+            }`}>
+            {n}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

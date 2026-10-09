@@ -110,6 +110,8 @@ interface FormState {
   status: string;
   remarks: string;
   stoneLines: StoneLine[];
+  styles: string[];
+  distinctiveness: number | null;
 }
 
 const EMPTY_LINE: StoneLine = { stoneType: 'Diamond', shape: '', sizeLength: '', sizeWidth: '', colour: 'WHITE', count: '', totalWeight: '', setting: '', remarks: '' };
@@ -119,6 +121,7 @@ const EMPTY: FormState = {
   size: '', cadImageUrl: '', referenceImageUrl: '',
   goldWeightNine: '', goldWeightFourteen: '', goldWeightEighteen: '',
   rhodiumInstruction: '', status: 'Pending', remarks: '', stoneLines: [],
+  styles: [], distinctiveness: null,
 };
 
 interface GaugeHint {
@@ -288,6 +291,7 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
   const [refUploadPreview, setRefUploadPreview] = useState('');
 
   const [fetchingNumber, setFetchingNumber] = useState(false);
+  const [categoryStyles, setCategoryStyles] = useState<string[]>([]);
 
   // Escape key + body scroll lock
   useEffect(() => {
@@ -307,7 +311,7 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
   // Reset after close animation finishes
   useEffect(() => {
     if (!open) {
-      const t = setTimeout(() => { setForm(EMPTY); setError(null); setFetchingNumber(false); }, 320);
+      const t = setTimeout(() => { setForm(EMPTY); setError(null); setFetchingNumber(false); setCategoryStyles([]); }, 320);
       return () => clearTimeout(t);
     }
   }, [open]);
@@ -362,9 +366,30 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
         style: '',
         styleCode: '',
         size: '',
+        styles: [],
         queueCode: buildQueueCode(newDesignNumber, newCategoryCode, ''),
       };
     });
+
+    if (!cat) { setCategoryStyles([]); return; }
+    fetch('/api/settings/category-styles', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => {
+        const map = (data.styles ?? {}) as Record<string, string[]>;
+        setCategoryStyles(map[cat] ?? []);
+      })
+      .catch(() => setCategoryStyles([]));
+  }
+
+  function toggleStyle(style: string) {
+    setForm(p => ({
+      ...p,
+      styles: p.styles.includes(style) ? p.styles.filter(s => s !== style) : [...p.styles, style],
+    }));
+  }
+
+  function pickDistinctiveness(n: number) {
+    setForm(p => ({ ...p, distinctiveness: p.distinctiveness === n ? null : n }));
   }
 
   function onStyle(label: string) {
@@ -435,6 +460,8 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
           rhodiumInstruction:    form.rhodiumInstruction.trim() || undefined,
           status:                form.status,
           remarks:               form.remarks.trim() || undefined,
+          styles:                form.styles,
+          distinctiveness:       form.distinctiveness,
           stoneLines: form.stoneLines
             .filter(l => l.stoneType)
             .map(l => ({
@@ -558,6 +585,38 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
                 <div>
                   <label className={lbl}>Code</label>
                   <div className={`${ro} font-mono tracking-wider`}>{form.styleCode || '—'}</div>
+                </div>
+              </div>
+
+              {/* Styles (multi-select) */}
+              {form.category && categoryStyles.length > 0 && (
+                <div>
+                  <label className={lbl}>Styles</label>
+                  <div className="flex flex-wrap gap-2">
+                    {categoryStyles.map(s => (
+                      <button key={s} type="button" onClick={() => toggleStyle(s)}
+                        className={`rounded-full px-3 py-1 text-sm cursor-pointer transition-colors ${
+                          form.styles.includes(s) ? 'bg-[#456158] text-white' : 'bg-[#f0ebe3] text-[#1a1a1a] hover:bg-[#e0d8ce]'
+                        }`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Distinctiveness */}
+              <div>
+                <label className={lbl}>Distinctiveness</label>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button key={n} type="button" onClick={() => pickDistinctiveness(n)}
+                      className={`w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center transition-colors ${
+                        form.distinctiveness === n ? 'bg-[#456158] text-white' : 'border border-[#ddd5c8] text-[#6b6560] hover:bg-[#f0ebe3]'
+                      }`}>
+                      {n}
+                    </button>
+                  ))}
                 </div>
               </div>
 
