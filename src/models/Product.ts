@@ -73,6 +73,8 @@ export interface IProduct extends Document {
   changelog: IChangelog[];
   linkedProducts?: string[];
   manufacturingRuns?: IManufacturingRun[];
+  styles?: string[];
+  distinctiveness?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -170,6 +172,9 @@ const ProductSchema = new Schema<IProduct>(
     linkedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: [] }],
 
     manufacturingRuns: { type: [ManufacturingRunSchema], default: [] },
+
+    styles:          { type: [String], default: [] },
+    distinctiveness: { type: Number, min: 1, max: 5, default: null },
   },
   { timestamps: true }
 );

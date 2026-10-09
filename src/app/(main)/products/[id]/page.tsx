@@ -53,6 +53,8 @@ interface Product {
   totalColourStoneWeight?: number; totalColourstonePcs?: number;
   rhodiumInstruction?: string;
   status: string; remarks?: string;
+  styles?: string[];
+  distinctiveness?: number | null;
   stoneLines: StoneLine[];
   versions: ProductVersion[];
   changelog: ChangelogEntry[];
@@ -690,6 +692,164 @@ function StyleField({ style, category, onSave }: {
         <button onClick={startEdit}
           className="flex-1 text-left text-sm text-[#1a1a1a] hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
           {style || '—'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Styles field ──────────────────────────────────────────────────────────────
+
+function StylesField({ styles, categoryStyles, onSave }: {
+  styles?: string[];
+  categoryStyles: string[];
+  onSave: (styles: string[]) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft]     = useState<string[]>([]);
+  const [freeText, setFreeText] = useState('');
+  const [saving, setSaving]   = useState(false);
+  const [err, setErr]         = useState<string | null>(null);
+
+  function startEdit() {
+    setDraft(styles ?? []);
+    setFreeText((styles ?? []).join(', '));
+    setEditing(true);
+    setErr(null);
+  }
+
+  function toggle(style: string) {
+    setDraft(prev => prev.includes(style) ? prev.filter(s => s !== style) : [...prev, style]);
+  }
+
+  async function save() {
+    setSaving(true); setErr(null);
+    try {
+      const finalStyles = categoryStyles.length > 0
+        ? draft
+        : freeText.split(',').map(s => s.trim()).filter(Boolean);
+      await onSave(finalStyles);
+      setEditing(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-[#f8f5f0] last:border-0">
+      <span className="w-44 shrink-0 text-xs text-[#6b6560] pt-1">Styles</span>
+      {editing ? (
+        <div className="flex-1 min-w-0">
+          {categoryStyles.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {categoryStyles.map(s => (
+                <button key={s} type="button" onClick={() => toggle(s)}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
+                    draft.includes(s) ? 'bg-[#456158] text-white' : 'bg-[#f0ebe3] text-[#1a1a1a] hover:bg-[#e0d8ce]'
+                  }`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <input type="text" value={freeText} onChange={e => setFreeText(e.target.value)}
+              placeholder="Comma-separated styles"
+              className="w-full rounded-lg border border-brand/30 px-2.5 py-1.5 text-sm bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand" />
+          )}
+          <div className="flex items-center gap-1.5 mt-2">
+            <button onClick={save} disabled={saving}
+              className="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand/90 disabled:opacity-50 shrink-0 transition-colors">
+              {saving ? <Spinner /> : <CheckIcon />}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="w-7 h-7 rounded-lg border border-[#ddd5c8] text-[#6b6560] flex items-center justify-center hover:bg-[#f0ebe3] shrink-0 transition-colors">
+              <XSmall />
+            </button>
+          </div>
+          {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+        </div>
+      ) : (
+        <button onClick={startEdit}
+          className="flex-1 text-left hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
+          {(styles ?? []).length === 0 ? (
+            <span className="text-sm text-[#1a1a1a]">—</span>
+          ) : (
+            <span className="flex flex-wrap gap-1.5">
+              {(styles ?? []).map(s => (
+                <span key={s} className="bg-[#f0ebe3] text-[#1a1a1a] rounded-full px-2 py-0.5 text-xs">{s}</span>
+              ))}
+            </span>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Distinctiveness field ─────────────────────────────────────────────────────
+
+function DistinctivenessField({ value, onSave }: {
+  value?: number | null;
+  onSave: (v: number | null) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft]     = useState<number | null>(null);
+  const [saving, setSaving]   = useState(false);
+  const [err, setErr]         = useState<string | null>(null);
+
+  function startEdit() { setDraft(value ?? null); setEditing(true); setErr(null); }
+
+  function pick(n: number) {
+    setDraft(prev => prev === n ? null : n);
+  }
+
+  async function save() {
+    setSaving(true); setErr(null);
+    try { await onSave(draft); setEditing(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Save failed'); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-[#f8f5f0] last:border-0">
+      <span className="w-44 shrink-0 text-xs text-[#6b6560] pt-1">Distinctiveness</span>
+      {editing ? (
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {[1, 2, 3, 4, 5].map(n => (
+              <button key={n} type="button" onClick={() => pick(n)}
+                className={`w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center transition-colors ${
+                  draft === n ? 'bg-[#456158] text-white' : 'border border-[#ddd5c8] text-[#6b6560] hover:bg-[#f0ebe3]'
+                }`}>
+                {n}
+              </button>
+            ))}
+            <button onClick={save} disabled={saving}
+              className="w-7 h-7 rounded-lg bg-brand text-white flex items-center justify-center hover:bg-brand/90 disabled:opacity-50 shrink-0 transition-colors ml-2">
+              {saving ? <Spinner /> : <CheckIcon />}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="w-7 h-7 rounded-lg border border-[#ddd5c8] text-[#6b6560] flex items-center justify-center hover:bg-[#f0ebe3] shrink-0 transition-colors">
+              <XSmall />
+            </button>
+          </div>
+          {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+        </div>
+      ) : (
+        <button onClick={startEdit}
+          className="flex-1 text-left hover:bg-[#f8f5f0] rounded px-1.5 py-0.5 -ml-1.5 transition-colors min-h-[24px]">
+          <span className="flex items-center gap-1.5">
+            {[1, 2, 3, 4, 5].map(n => (
+              <span key={n}
+                className={`w-6 h-6 rounded-full text-xs font-semibold flex items-center justify-center ${
+                  value === n ? 'bg-[#456158] text-white' : 'border border-[#ddd5c8] text-[#6b6560]'
+                }`}>
+                {n}
+              </span>
+            ))}
+          </span>
         </button>
       )}
     </div>
@@ -1783,6 +1943,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
 
+  // Category-specific style options, for the Styles field
+  const [categoryStyles, setCategoryStyles] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!product?.category) { setCategoryStyles([]); return; }
+    fetch('/api/settings/category-styles', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => {
+        const map = (data.styles ?? {}) as Record<string, string[]>;
+        setCategoryStyles(map[product.category as string] ?? []);
+      })
+      .catch(() => setCategoryStyles([]));
+  }, [product?.category]);
+
   async function putField(body: Record<string, unknown>) {
     const res = await fetch(`/api/products/${id}`, {
       method: 'PUT',
@@ -2244,6 +2418,14 @@ async function submitVersion(draft: VersionDraft) {
             {isV1 && (
               <StyleField style={product.style} category={product.category}
                 onSave={async style => { await putField({ style: style || undefined }); }} />
+            )}
+            {isV1 && (
+              <StylesField styles={product.styles} categoryStyles={categoryStyles}
+                onSave={async styles => { await putField({ styles }); }} />
+            )}
+            {isV1 && (
+              <DistinctivenessField value={product.distinctiveness}
+                onSave={async v => { await putField({ distinctiveness: v }); }} />
             )}
 
             {/* Version-level fields — all tabs */}

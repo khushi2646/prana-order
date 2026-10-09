@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // ── Category reference data ───────────────────────────────────────────────────
 
@@ -160,6 +160,136 @@ function DeleteRow({ action }: { action: DeleteAction }) {
   );
 }
 
+// ── Product Styles ────────────────────────────────────────────────────────────
+
+const STYLE_CATEGORIES = [
+  'Ring', 'Earrings', 'Pendant', 'Necklace', 'Bracelet',
+  'Pendant Earrings', 'Necklace Earrings', 'Chain Pendant',
+];
+
+function StylePill({ category, style, onRemoved }: {
+  category: string;
+  style:    string;
+  onRemoved: () => void;
+}) {
+  const [removing, setRemoving] = useState(false);
+
+  async function remove() {
+    if (removing) return;
+    setRemoving(true);
+    try {
+      await fetch('/api/settings/category-styles', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ category, style, action: 'remove' }),
+      });
+      onRemoved();
+    } finally {
+      setRemoving(false);
+    }
+  }
+
+  return (
+    <span className="bg-[#f0ebe3] text-[#1a1a1a] rounded-full px-3 py-1 text-sm flex items-center gap-1">
+      {style}
+      <button type="button" onClick={remove} disabled={removing} className="text-[#6b6560] hover:text-red-500">
+        ×
+      </button>
+    </span>
+  );
+}
+
+function AddStyleInput({ category, onAdded }: {
+  category: string;
+  onAdded:  () => void;
+}) {
+  const [value, setValue]   = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    const style = value.trim();
+    if (!style || saving) return;
+    setSaving(true);
+    try {
+      await fetch('/api/settings/category-styles', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ category, style, action: 'add' }),
+      });
+      setValue('');
+      onAdded();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <input
+        type="text"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') submit(); }}
+        placeholder="Add style…"
+        className="flex-1 min-w-0 px-2.5 py-1.5 text-sm border border-[#ddd5c8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158]"
+      />
+      <button
+        type="button"
+        onClick={submit}
+        disabled={saving}
+        className="px-3 py-1.5 text-sm font-medium text-white bg-[#456158] rounded-lg hover:bg-[#3a5049] disabled:opacity-50 transition-colors"
+      >
+        Add
+      </button>
+    </div>
+  );
+}
+
+function ProductStylesSection() {
+  const [styles, setStyles]   = useState<Record<string, string[]> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  async function fetchStyles() {
+    setLoading(true);
+    try {
+      const res  = await fetch('/api/settings/category-styles', { cache: 'no-store' });
+      const data = await res.json();
+      setStyles(data.styles ?? {});
+    } catch {
+      setStyles({});
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchStyles(); }, []);
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
+      <h2 className="text-lg font-semibold text-[#1a1a1a] mb-1">Product Styles</h2>
+      <p className="text-sm text-[#6b6560] mb-4">Manage style options shown on each product page</p>
+
+      {loading || !styles ? (
+        <p className="text-sm text-[#6b6560]">Loading styles...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {STYLE_CATEGORIES.map(category => (
+            <div key={category}>
+              <h3 className="font-semibold text-[#1a1a1a] mb-2">{category}</h3>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {(styles[category] ?? []).map(style => (
+                  <StylePill key={style} category={category} style={style} onRemoved={fetchStyles} />
+                ))}
+              </div>
+              <AddStyleInput category={category} onAdded={fetchStyles} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -224,6 +354,9 @@ export default function SettingsPage() {
             </table>
           </div>
         </div>
+
+        {/* ── Product Styles ───────────────────────────────────────── */}
+        <ProductStylesSection />
 
       </div>
     </div>
