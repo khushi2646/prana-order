@@ -287,6 +287,8 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
   const [refUploadErr, setRefUploadErr]   = useState<string | null>(null);
   const [refUploadPreview, setRefUploadPreview] = useState('');
 
+  const [fetchingNumber, setFetchingNumber] = useState(false);
+
   // Escape key + body scroll lock
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -305,9 +307,23 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
   // Reset after close animation finishes
   useEffect(() => {
     if (!open) {
-      const t = setTimeout(() => { setForm(EMPTY); setError(null); }, 320);
+      const t = setTimeout(() => { setForm(EMPTY); setError(null); setFetchingNumber(false); }, 320);
       return () => clearTimeout(t);
     }
+  }, [open]);
+
+  // Auto-fetch the next design number whenever the drawer opens
+  useEffect(() => {
+    if (!open) return;
+    setFetchingNumber(true);
+    fetch('/api/products/next-number')
+      .then(r => r.json())
+      .then(data => {
+        if (data.nextNumber) onDesignNumber(data.nextNumber);
+      })
+      .catch(() => {})
+      .finally(() => setFetchingNumber(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   function set<K extends keyof FormState>(k: K, v: FormState[K]) {
@@ -508,8 +524,10 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
               {/* Design Number */}
               <div>
                 <label className={lbl}>Design Number <span className="text-red-500">*</span></label>
-                <input className={inp} type="text" placeholder="e.g. P001"
-                  value={form.designNumber} onChange={e => onDesignNumber(e.target.value.toUpperCase())} />
+                <input className={`${inp} ${fetchingNumber ? 'opacity-60 cursor-not-allowed' : ''}`} type="text"
+                  placeholder={fetchingNumber ? 'Generating…' : 'e.g. P001'}
+                  value={form.designNumber} onChange={e => onDesignNumber(e.target.value.toUpperCase())}
+                  readOnly={fetchingNumber} />
               </div>
 
               {/* Category + code */}
