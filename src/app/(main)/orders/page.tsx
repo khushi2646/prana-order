@@ -288,7 +288,7 @@ function KanbanCard({ product, cadImageUrl, onClick, dragStateRef, onStageChange
       <button
         type="button"
         onClick={e => { e.stopPropagation(); setConfirming(true); }}
-        className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs"
+        className="absolute top-1.5 right-1.5 text-red-400 hover:text-red-600 text-base w-5 h-5 bg-white/80 rounded-full p-0.5"
       >
         ×
       </button>
