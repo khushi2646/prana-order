@@ -61,3 +61,28 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     return NextResponse.json({ message }, { status: 400 });
   }
 }
+
+// ── DELETE /api/products/[id]/versions/[versionNumber] ────────────────────────
+
+export async function DELETE(_request: NextRequest, { params }: Ctx) {
+  try {
+    await connectDB();
+    const { id, versionNumber: vNumStr } = await params;
+
+    const product = await Product.findById(id);
+    if (!product) return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+
+    const vNum = parseInt(vNumStr, 10);
+    const versionIndex = product.versions.findIndex(v => v.versionNumber === vNum);
+    if (versionIndex === -1) return NextResponse.json({ message: 'Version not found' }, { status: 404 });
+
+    product.versions.splice(versionIndex, 1);
+    product.markModified('versions');
+
+    const updated = await product.save();
+    return NextResponse.json(updated);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    return NextResponse.json({ message }, { status: 500 });
+  }
+}

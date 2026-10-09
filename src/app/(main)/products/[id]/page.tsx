@@ -433,6 +433,74 @@ function DeleteProductButton({ productId }: { productId: string }) {
   );
 }
 
+// ── Delete version button ─────────────────────────────────────────────────────
+
+function DeleteVersionButton({ productId, versionNumber, onDeleted, setActiveTab }: {
+  productId: string;
+  versionNumber: number;
+  onDeleted: () => void;
+  setActiveTab: (tab: number) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [value, setValue] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function cancel() {
+    setConfirming(false);
+    setValue('');
+    setErr(null);
+  }
+
+  async function confirmDelete() {
+    setDeleting(true); setErr(null);
+    try {
+      const res = await fetch(`/api/products/${productId}/versions/${versionNumber}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(e.message ?? 'Delete failed');
+      }
+      cancel();
+      onDeleted();
+      setActiveTab(1);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Delete failed');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <button type="button" onClick={() => setConfirming(true)}
+        className="text-sm text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors">
+        Delete Version
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-red-600">Type &quot;DELETE&quot; to confirm</span>
+      <div className="flex items-center gap-1.5">
+        <input type="text" value={value} onChange={e => setValue(e.target.value)} autoFocus
+          placeholder="DELETE"
+          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+        />
+        <button type="button" onClick={cancel} disabled={deleting}
+          className="text-sm text-[#6b6560] border border-[#ddd5c8] rounded-lg px-3 py-1.5 hover:bg-[#f8f5f0] disabled:opacity-50 transition-colors">
+          Cancel
+        </button>
+        <button type="button" onClick={confirmDelete} disabled={value !== 'DELETE' || deleting}
+          className="text-sm text-white bg-red-600 rounded-lg px-3 py-1.5 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5">
+          {deleting && <Spinner />} Confirm
+        </button>
+      </div>
+      {err && <p className="text-xs text-red-500">{err}</p>}
+    </div>
+  );
+}
+
 // ── Category field ────────────────────────────────────────────────────────────
 
 function CategoryField({ category, onSave }: {
@@ -2142,6 +2210,11 @@ async function submitVersion(draft: VersionDraft) {
               </span>
             )}
           </div>
+          {!isV1 && activeVersion && (
+            <div className="mb-3">
+              <DeleteVersionButton productId={product._id} versionNumber={activeTab} onDeleted={fetchProduct} setActiveTab={setActiveTab} />
+            </div>
+          )}
           <p className="text-[11px] text-[#6b6560]/60 mb-4">Click any value to edit it inline.</p>
 
           <div className="divide-y divide-[#f8f5f0]">
