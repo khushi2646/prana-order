@@ -13,11 +13,12 @@ export async function GET() {
     }
 
     const max = products.reduce((best, p) => {
-      const n = parseInt((p.designNumber as string).replace(/^P/i, ''), 10);
+      const match = (p.designNumber as string).match(/P(\d+)$/i);
+      const n = match ? parseInt(match[1], 10) : NaN;
       return Number.isFinite(n) && n > best ? n : best;
     }, 0);
 
-    const next = String(max + 1).padStart(3, '0');
+    const next = String(max + 1).padStart(4, '0');
     return NextResponse.json({ nextNumber: `P${next}` });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error';
