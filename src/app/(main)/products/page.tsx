@@ -29,7 +29,7 @@ const CATEGORY_STYLES: Record<string, string[]> = {
   Ring:               ['Solitaire Ring','Two Stone Ring','Three Stone Ring','Cocktail Ring','Cocktail Ring with Colourstone','Fancy Ring','Fancy Band','Band Ring','Daily Ring'],
   Earrings:           ['Stud','Solitaire','Two Stone','Fancy','Cocktail','Colourstone','Halo','Cluster','Danglers','Drop','Long','Hoops','Huggies','Jhumka','Chandbali','Ear Cuff','Ear Jacket'],
   Pendant:            ['Solitaire','Two Stone','Fancy','Cocktail','Colourstone','Daily'],
-  'Pendant Set':      ['Solitaire','Two Stone','Fancy','Cocktail','Colourstone','Floral','Halo','Cluster'],
+  'Pendant Earrings': ['Solitaire','Two Stone','Fancy','Cocktail','Colourstone','Floral','Halo','Cluster'],
   Necklace:           ['Choker','Single Strand Tennis','Tennis','Lariat','Collar','Chain','Multi-line','Hasli Collar Choker','Fancy'],
   'Necklace Earrings':['Necklace Earrings'],
   Bracelet:           ['Tennis','Single Line','Station','Oval Fancy','Solitaire Oval','Daily Oval','Fancy','Cocktail','Broad','Delicate','Bangle','Kada','Charm'],

@@ -18,7 +18,7 @@ const CATEGORY_REF = [
     styles: ['Solitaire', 'Two Stone', 'Fancy', 'Cocktail', 'Colourstone', 'Daily'],
   },
   {
-    name: 'Pendant Set', code: 'PDS',
+    name: 'Pendant Earrings', code: 'PDE',
     styles: ['Solitaire', 'Two Stone', 'Fancy', 'Cocktail', 'Colourstone', 'Floral', 'Halo', 'Cluster'],
   },
   {
