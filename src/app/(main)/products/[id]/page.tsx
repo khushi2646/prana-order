@@ -2080,7 +2080,25 @@ async function submitVersion(draft: VersionDraft) {
             {/* Product-level fields — V1 only */}
             {isV1 && (
               <CategoryField category={product.category}
-                onSave={async cat => { await putField({ category: cat || undefined, style: null }); }} />
+                onSave={async cat => {
+                  const newCategoryCode = cat ? CATEGORY_MAP[cat]?.code : undefined;
+                  const body: Record<string, unknown> = { category: cat || undefined, categoryCode: newCategoryCode, style: null };
+
+                  if (newCategoryCode) {
+                    const knownCodes = Object.values(CATEGORY_MAP).map(c => c.code);
+                    const dashIndex = product.designNumber.indexOf('-');
+                    const prefix = dashIndex !== -1 ? product.designNumber.slice(0, dashIndex) : '';
+                    const strippedDesignNumber = knownCodes.includes(prefix)
+                      ? product.designNumber.slice(dashIndex + 1)
+                      : product.designNumber;
+
+                    const newDesignNumber = `${newCategoryCode}-${strippedDesignNumber}`;
+                    body.designNumber = newDesignNumber;
+                    body.queueCode = buildQueueCode(newDesignNumber, newCategoryCode, product.styleCode);
+                  }
+
+                  await putField(body);
+                }} />
             )}
             {isV1 && (
               <StyleField style={product.style} category={product.category}
