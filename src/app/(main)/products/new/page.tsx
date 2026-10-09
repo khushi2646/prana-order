@@ -297,6 +297,8 @@ function NewProductForm() {
   const [error, setError]   = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [fetchingNumber, setFetchingNumber] = useState(false);
+
   const [refImgMode, setRefImgMode]             = useState<'url' | 'upload'>('url');
   const [refUploading, setRefUploading]         = useState(false);
   const [refUploadErr, setRefUploadErr]         = useState<string | null>(null);
@@ -305,6 +307,21 @@ function NewProductForm() {
   useEffect(() => {
     if (productCode) setForm(prev => ({ ...prev, designNumber: productCode }));
   }, [productCode]);
+
+  // Auto-fetch the next design number when arriving without a productCode param
+  useEffect(() => {
+    if (productCode) return;
+    setFetchingNumber(true);
+    fetch('/api/products/next-number')
+      .then(r => r.json())
+      .then(data => {
+        const num: string = data.nextNumber ?? '';
+        if (num) onDesignNumber(num);
+      })
+      .catch(() => {})
+      .finally(() => setFetchingNumber(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function set<K extends keyof FormState>(k: K, v: FormState[K]) {
     setForm(p => ({ ...p, [k]: v }));
@@ -322,15 +339,29 @@ function NewProductForm() {
 
   function onCategory(cat: string) {
     const def = CATEGORY_MAP[cat];
-    setForm(p => ({
-      ...p,
-      category:     cat,
-      categoryCode: def?.code ?? '',
-      style:        '',
-      styleCode:    '',
-      size:         '',
-      queueCode:    buildQueueCode(p.designNumber, def?.code ?? '', ''),
-    }));
+    const newCategoryCode = def?.code ?? '';
+
+    setForm(p => {
+      let newDesignNumber = p.designNumber;
+      if (newCategoryCode) {
+        const knownCodes = Object.values(CATEGORY_MAP).map(c => c.code);
+        const dashIndex = p.designNumber.indexOf('-');
+        const prefix = dashIndex !== -1 ? p.designNumber.slice(0, dashIndex) : '';
+        const stripped = knownCodes.includes(prefix) ? p.designNumber.slice(dashIndex + 1) : p.designNumber;
+        newDesignNumber = `${newCategoryCode}-${stripped}`;
+      }
+
+      return {
+        ...p,
+        category:     cat,
+        categoryCode: newCategoryCode,
+        designNumber: newDesignNumber,
+        style:        '',
+        styleCode:    '',
+        size:         '',
+        queueCode:    buildQueueCode(newDesignNumber, newCategoryCode, ''),
+      };
+    });
   }
 
   function onStyle(label: string) {
@@ -496,6 +527,14 @@ function NewProductForm() {
                 <label className={lbl}>Design Number <span className="text-red-500">*</span></label>
                 {productCode ? (
                   <div className={`${ro} font-mono tracking-wider`}>{form.designNumber}</div>
+                ) : fetchingNumber ? (
+                  <div className={`${ro} font-mono tracking-wider flex items-center gap-2`}>
+                    <svg className="w-3.5 h-3.5 animate-spin text-[#456158]" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"
+                        strokeDasharray="31.4" strokeDashoffset="10" />
+                    </svg>
+                    Generating…
+                  </div>
                 ) : (
                   <input className={inp} type="text" placeholder="e.g. P001"
                     value={form.designNumber}

@@ -326,15 +326,29 @@ export default function AddProductDrawer({ open, onClose, onSuccess }: Props) {
 
   function onCategory(cat: string) {
     const def = CATEGORY_MAP[cat];
-    setForm(p => ({
-      ...p,
-      category: cat,
-      categoryCode: def?.code ?? '',
-      style: '',
-      styleCode: '',
-      size: '',
-      queueCode: buildQueueCode(p.designNumber, def?.code ?? '', ''),
-    }));
+    const newCategoryCode = def?.code ?? '';
+
+    setForm(p => {
+      let newDesignNumber = p.designNumber;
+      if (newCategoryCode) {
+        const knownCodes = Object.values(CATEGORY_MAP).map(c => c.code);
+        const dashIndex = p.designNumber.indexOf('-');
+        const prefix = dashIndex !== -1 ? p.designNumber.slice(0, dashIndex) : '';
+        const stripped = knownCodes.includes(prefix) ? p.designNumber.slice(dashIndex + 1) : p.designNumber;
+        newDesignNumber = `${newCategoryCode}-${stripped}`;
+      }
+
+      return {
+        ...p,
+        category: cat,
+        categoryCode: newCategoryCode,
+        designNumber: newDesignNumber,
+        style: '',
+        styleCode: '',
+        size: '',
+        queueCode: buildQueueCode(newDesignNumber, newCategoryCode, ''),
+      };
+    });
   }
 
   function onStyle(label: string) {
