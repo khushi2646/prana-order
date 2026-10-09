@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NewOrderDrawer from '@/components/orders/NewOrderDrawer';
@@ -32,6 +32,13 @@ interface FlatProduct extends OrderProduct {
   customerName: string;
   isUrgent:     boolean;
   orderType:    'stock' | 'customer';
+  productIndex: number;
+}
+
+interface DragState {
+  orderMongoId: string;
+  productIndex: number;
+  fromStage:    Stage;
 }
 
 interface FollowUp {
@@ -242,21 +249,73 @@ function FlatProductCard({ product, cadImageUrl, onClick }: {
 
 // ── Kanban card ───────────────────────────────────────────────────────────────
 
-function KanbanCard({ product, cadImageUrl, onClick }: {
-  product:     FlatProduct;
-  cadImageUrl: string;
-  onClick:     () => void;
+function KanbanCard({ product, cadImageUrl, onClick, dragStateRef, onStageChange, onDelete }: {
+  product:      FlatProduct;
+  cadImageUrl:  string;
+  onClick:      () => void;
+  dragStateRef: React.MutableRefObject<DragState | null>;
+  onStageChange: (stage: Stage) => void;
+  onDelete:      () => void;
 }) {
   const thumbUrl = cadImageUrl ? gdriveThumbnail(cadImageUrl) : '';
 
+  const [dragging, setDragging]   = useState(false);
+  const [stageOpen, setStageOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const stageMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!stageOpen) return;
+    function onOutside(e: MouseEvent) {
+      if (stageMenuRef.current && !stageMenuRef.current.contains(e.target as Node)) setStageOpen(false);
+    }
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [stageOpen]);
+
   return (
     <div
+      draggable
+      onDragStart={() => {
+        dragStateRef.current = { orderMongoId: product.orderMongoId, productIndex: product.productIndex, fromStage: product.stage };
+        setDragging(true);
+      }}
+      onDragEnd={() => setDragging(false)}
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow duration-150"
+      className={`relative bg-white rounded-xl shadow-sm p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow duration-150 ${dragging ? 'opacity-50' : ''}`}
     >
+      {/* Delete button */}
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); setConfirming(true); }}
+        className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs"
+      >
+        ×
+      </button>
+
+      {/* Inline delete confirmation */}
+      {confirming && (
+        <div
+          onClick={e => e.stopPropagation()}
+          className="absolute inset-0 z-10 bg-white rounded-xl border border-red-200 flex flex-col items-center justify-center gap-2 p-3"
+        >
+          <p className="text-xs text-[#1a1a1a] text-center">Remove from order?</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { setConfirming(false); onDelete(); }}
+              className="text-xs font-semibold text-white bg-red-600 rounded-lg px-3 py-1 hover:bg-red-700 transition-colors">
+              Yes
+            </button>
+            <button type="button" onClick={() => setConfirming(false)}
+              className="text-xs font-semibold text-[#6b6560] border border-[#ddd5c8] rounded-lg px-3 py-1 hover:bg-[#f8f5f0] transition-colors">
+              No
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap pr-4">
             {product.isUrgent && (
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block shrink-0" title="Urgent" />
             )}
@@ -288,6 +347,35 @@ function KanbanCard({ product, cadImageUrl, onClick }: {
               )}
             </div>
           )}
+
+          {/* Stage selector — tap to change (mobile + desktop) */}
+          <div className="relative" ref={stageMenuRef}>
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); setStageOpen(o => !o); }}
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STAGE_BADGE[product.stage] ?? 'bg-gray-100 text-gray-600'}`}
+            >
+              {STAGE_LABEL[product.stage]}
+            </button>
+            {stageOpen && (
+              <div className="absolute left-0 top-full mt-1 z-20 min-w-[160px] bg-white rounded-lg shadow-lg border border-[#f0ebe3] py-1">
+                {KANBAN_STAGES.map(s => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setStageOpen(false);
+                      if (s.value !== product.stage) onStageChange(s.value);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#f8f5f0] transition-colors flex items-center gap-2"
+                  >
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${STAGE_BADGE[s.value]}`}>{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {thumbUrl && (
@@ -385,6 +473,28 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, []);
 
+  // Kanban drag-and-drop state
+  const dragStateRef = useRef<DragState | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<Stage | null>(null);
+
+  async function patchProductStage(orderMongoId: string, productIndex: number, stage: Stage) {
+    try {
+      const res = await fetch(`/api/orders/${orderMongoId}/products/${productIndex}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ stage }),
+      });
+      if (res.ok) await fetchOrders();
+    } catch { /* ignore */ }
+  }
+
+  async function deleteKanbanProduct(orderMongoId: string, productIndex: number) {
+    try {
+      const res = await fetch(`/api/orders/${orderMongoId}/products/${productIndex}`, { method: 'DELETE' });
+      if (res.ok) await fetchOrders();
+    } catch { /* ignore */ }
+  }
+
   // Fetch CAD images for all unique productRefs across all orders
   useEffect(() => {
     const refs = [...new Set(
@@ -411,13 +521,14 @@ export default function OrdersPage() {
   // Flat products list derived from orders
   const allProducts = useMemo<FlatProduct[]>(() =>
     orders.flatMap(o =>
-      o.products.map(p => ({
+      o.products.map((p, idx) => ({
         ...p,
         orderMongoId: o._id,
         orderId:      o.orderId,
         customerName: o.customerName,
         isUrgent:     o.isUrgent,
         orderType:    o.orderType,
+        productIndex: idx,
       }))
     ),
   [orders]);
@@ -600,10 +711,23 @@ export default function OrdersPage() {
             <div className="flex gap-4 pb-4">
               {KANBAN_STAGES.map(stageCfg => {
                 const products = kanbanColumns[stageCfg.value];
+                const isDragOver = dragOverStage === stageCfg.value;
                 return (
                   <div
                     key={stageCfg.value}
-                    className="w-72 shrink-0 bg-[#f3f4f6] rounded-xl border border-[#e5e7eb] min-h-[500px] p-3"
+                    onDragOver={e => { e.preventDefault(); setDragOverStage(stageCfg.value); }}
+                    onDragLeave={() => setDragOverStage(prev => prev === stageCfg.value ? null : prev)}
+                    onDrop={e => {
+                      e.preventDefault();
+                      setDragOverStage(null);
+                      const dragged = dragStateRef.current;
+                      dragStateRef.current = null;
+                      if (!dragged) return;
+                      if (dragged.fromStage !== stageCfg.value) {
+                        patchProductStage(dragged.orderMongoId, dragged.productIndex, stageCfg.value);
+                      }
+                    }}
+                    className={`w-72 shrink-0 rounded-xl border border-[#e5e7eb] min-h-[500px] p-3 transition-colors ${isDragOver ? 'bg-[#e8f0ee]' : 'bg-[#f3f4f6]'}`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-bold text-sm text-[#1a1a1a]">{stageCfg.label}</span>
@@ -614,12 +738,15 @@ export default function OrdersPage() {
                     {products.length === 0 ? (
                       <p className="text-xs text-[#9ca3af] text-center mt-6">No products</p>
                     ) : (
-                      products.map((p, i) => (
+                      products.map(p => (
                         <KanbanCard
-                          key={`${p.orderMongoId}-${i}`}
+                          key={`${p.orderMongoId}-${p.productIndex}`}
                           product={p}
                           cadImageUrl={p.productRef ? (cadMap[p.productRef] ?? '') : ''}
                           onClick={() => router.push(`/orders/${p.orderMongoId}`)}
+                          dragStateRef={dragStateRef}
+                          onStageChange={stage => patchProductStage(p.orderMongoId, p.productIndex, stage)}
+                          onDelete={() => deleteKanbanProduct(p.orderMongoId, p.productIndex)}
                         />
                       ))
                     )}
