@@ -2,18 +2,20 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import NewOrderDrawer from '@/components/orders/NewOrderDrawer';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Stage     = 'cad' | 'diamond_procurement' | 'manufacturing' | 'order_received';
-type ActiveTab = 'orders' | 'products';
+type Stage     = 'cad' | 'diamond_procurement' | 'assorting' | 'manufacturing' | 'order_received';
+type ActiveTab = 'orders' | 'products' | 'kanban';
 
 interface OrderProduct {
   productCode:       string;
   stage:             Stage;
   quantity?:         number;
   goldColour?:       string;
+  goldColours?:      string[];
   goldCarat?:        string;
   productRef?:       string | null;
   isNewProduct?:     boolean;
@@ -56,6 +58,7 @@ interface Order {
 const STAGE_LABEL: Record<Stage, string> = {
   cad:                 'CAD',
   diamond_procurement: 'Procurement',
+  assorting:           'Assorting',
   manufacturing:       'Manufacturing',
   order_received:      'Received',
 };
@@ -63,9 +66,18 @@ const STAGE_LABEL: Record<Stage, string> = {
 const STAGE_BADGE: Record<Stage, string> = {
   cad:                 'bg-purple-100 text-purple-700',
   diamond_procurement: 'bg-blue-100 text-blue-700',
+  assorting:           'bg-orange-100 text-orange-700',
   manufacturing:       'bg-amber-100 text-amber-700',
   order_received:      'bg-green-100 text-green-700',
 };
+
+const KANBAN_STAGES: { value: Stage; label: string }[] = [
+  { value: 'cad',                 label: 'CAD'                 },
+  { value: 'diamond_procurement', label: 'Diamond Procurement' },
+  { value: 'assorting',           label: 'Assorting'           },
+  { value: 'manufacturing',       label: 'Manufacturing'       },
+  { value: 'order_received',      label: 'Order Received'      },
+];
 
 function stageSummary(products: OrderProduct[]): string {
   if (!products.length) return 'No products';
@@ -220,6 +232,69 @@ function FlatProductCard({ product, cadImageUrl, onClick }: {
             src={thumbUrl}
             alt=""
             className="w-14 h-14 rounded-lg object-cover border border-[#f0ebe3] shrink-0 self-start"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Kanban card ───────────────────────────────────────────────────────────────
+
+function KanbanCard({ product, cadImageUrl, onClick }: {
+  product:     FlatProduct;
+  cadImageUrl: string;
+  onClick:     () => void;
+}) {
+  const thumbUrl = cadImageUrl ? gdriveThumbnail(cadImageUrl) : '';
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl shadow-sm p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow duration-150"
+    >
+      <div className="flex items-start gap-2">
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {product.isUrgent && (
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block shrink-0" title="Urgent" />
+            )}
+            <span className="font-bold text-[#1a1a1a] text-sm">
+              {product.isVendorProduct
+                ? ((product.vendorDescription ?? product.productCode).slice(0, 30) + ((product.vendorDescription ?? '').length > 30 ? '…' : ''))
+                : product.productCode}
+            </span>
+            {product.isVendorProduct && (
+              <span className="bg-purple-100 text-purple-700 text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0">Vendor</span>
+            )}
+          </div>
+
+          <Link
+            href={`/orders/${product.orderMongoId}`}
+            onClick={e => e.stopPropagation()}
+            className="text-sm text-[#456158] block truncate"
+          >
+            {product.orderId}
+          </Link>
+
+          {((product.goldColours ?? []).length > 0 || product.goldCarat) && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {(product.goldColours ?? []).map(c => (
+                <span key={c} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ebe3] text-[#6b6560] capitalize">{c}</span>
+              ))}
+              {product.goldCarat && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#f0ebe3] text-[#6b6560] uppercase">{product.goldCarat}</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {thumbUrl && (
+          <img
+            src={thumbUrl}
+            alt=""
+            className="w-10 h-10 rounded object-cover border border-[#f0ebe3] shrink-0"
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         )}
@@ -393,6 +468,17 @@ export default function OrdersPage() {
     });
   }, [allProducts, search, typeFilter, urgencyFilter]);
 
+  // Kanban columns — filteredProducts grouped by stage
+  const kanbanColumns = useMemo(() => {
+    const map: Record<Stage, FlatProduct[]> = {
+      cad: [], diamond_procurement: [], assorting: [], manufacturing: [], order_received: [],
+    };
+    for (const p of filteredProducts) {
+      (map[p.stage] ??= []).push(p);
+    }
+    return map;
+  }, [filteredProducts]);
+
   return (
     <>
       <div className="px-3 sm:px-6 lg:px-8 py-8 min-h-screen bg-[#f8f5f0]">
@@ -411,7 +497,7 @@ export default function OrdersPage() {
 
         {/* ── Tabs ──────────────────────────────────────────────────────── */}
         <div className="flex gap-6 border-b border-[#e8e0d4] mb-6">
-          {(['orders', 'products'] as const).map(tab => (
+          {(['orders', 'products', 'kanban'] as const).map(tab => (
             <button
               key={tab}
               type="button"
@@ -422,7 +508,7 @@ export default function OrdersPage() {
                   : 'text-[#6b6560] hover:text-[#1a1a1a]'
               }`}
             >
-              {tab === 'orders' ? 'Orders' : 'Products'}
+              {tab === 'orders' ? 'Orders' : tab === 'products' ? 'Products' : 'Kanban'}
             </button>
           ))}
         </div>
@@ -494,7 +580,7 @@ export default function OrdersPage() {
               ))}
             </div>
           )
-        ) : (
+        ) : activeTab === 'products' ? (
           filteredProducts.length === 0 ? (
             <p className="text-center text-[#6b6560] mt-16">No products found</p>
           ) : (
@@ -509,6 +595,39 @@ export default function OrdersPage() {
               ))}
             </div>
           )
+        ) : (
+          <div className="overflow-x-auto w-full">
+            <div className="flex gap-4 pb-4">
+              {KANBAN_STAGES.map(stageCfg => {
+                const products = kanbanColumns[stageCfg.value];
+                return (
+                  <div
+                    key={stageCfg.value}
+                    className="w-72 shrink-0 bg-[#f3f4f6] rounded-xl border border-[#e5e7eb] min-h-[500px] p-3"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-bold text-sm text-[#1a1a1a]">{stageCfg.label}</span>
+                      <span className="text-xs font-semibold bg-white text-[#6b6560] px-2 py-0.5 rounded-full border border-[#ddd5c8]">
+                        {products.length}
+                      </span>
+                    </div>
+                    {products.length === 0 ? (
+                      <p className="text-xs text-[#9ca3af] text-center mt-6">No products</p>
+                    ) : (
+                      products.map((p, i) => (
+                        <KanbanCard
+                          key={`${p.orderMongoId}-${i}`}
+                          product={p}
+                          cadImageUrl={p.productRef ? (cadMap[p.productRef] ?? '') : ''}
+                          onClick={() => router.push(`/orders/${p.orderMongoId}`)}
+                        />
+                      ))
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 

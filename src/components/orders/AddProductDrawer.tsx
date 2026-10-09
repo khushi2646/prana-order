@@ -28,7 +28,7 @@ interface LocalStoneLine {
   shape: string; size: string; colour: string; piecesPerUnit: string;
 }
 
-type Stage       = 'cad' | 'diamond_procurement' | 'manufacturing' | 'order_received';
+type Stage       = 'cad' | 'diamond_procurement' | 'assorting' | 'manufacturing' | 'order_received';
 type VersionMode = 'base' | 'existing' | 'new';
 
 interface FormState {
@@ -56,6 +56,7 @@ const EMPTY_SL: LocalStoneLine = { shape: '', size: '', colour: 'WHITE', piecesP
 const STAGES: { value: Stage; label: string }[] = [
   { value: 'cad',                 label: 'CAD'           },
   { value: 'diamond_procurement', label: 'Procurement'   },
+  { value: 'assorting',           label: 'Assorting'     },
   { value: 'manufacturing',       label: 'Manufacturing' },
   { value: 'order_received',      label: 'Received'      },
 ];

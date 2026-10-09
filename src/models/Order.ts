@@ -24,7 +24,7 @@ const OrderProductSchema = new Schema(
     goldCarat:           { type: String, enum: ['9kt', '14kt', '18kt'] },
     findings:            { type: String },
     stoneLines:          [StoneLineSchema],
-    stage:               { type: String, enum: ['cad', 'diamond_procurement', 'manufacturing', 'order_received'], default: 'cad' },
+    stage:               { type: String, enum: ['cad', 'diamond_procurement', 'assorting', 'manufacturing', 'order_received'], default: 'cad' },
     remarks:             { type: String },
     isVendorProduct:          { type: Boolean, default: false },
     vendorDescription:        { type: String },

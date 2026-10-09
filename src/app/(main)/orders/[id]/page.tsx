@@ -7,7 +7,7 @@ import AddProductToOrderDrawer from '@/components/orders/AddProductDrawer';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Stage      = 'cad' | 'diamond_procurement' | 'manufacturing' | 'order_received';
+type Stage      = 'cad' | 'diamond_procurement' | 'assorting' | 'manufacturing' | 'order_received';
 type GoldColour = 'yellow' | 'white' | 'rose';
 type GoldCarat  = '9kt' | '14kt' | '18kt';
 
@@ -123,6 +123,7 @@ function productToEditForm(p: OrderProduct): EditProductForm {
 const STAGE_CONFIG: { value: Stage; label: string }[] = [
   { value: 'cad',                 label: 'CAD'           },
   { value: 'diamond_procurement', label: 'Procurement'   },
+  { value: 'assorting',           label: 'Assorting'     },
   { value: 'manufacturing',       label: 'Manufacturing' },
   { value: 'order_received',      label: 'Received'      },
 ];
@@ -130,6 +131,7 @@ const STAGE_CONFIG: { value: Stage; label: string }[] = [
 const STAGE_BADGE: Record<Stage, string> = {
   cad:                 'bg-purple-100 text-purple-700',
   diamond_procurement: 'bg-blue-100 text-blue-700',
+  assorting:           'bg-orange-100 text-orange-700',
   manufacturing:       'bg-amber-100 text-amber-700',
   order_received:      'bg-green-100 text-green-700',
 };
