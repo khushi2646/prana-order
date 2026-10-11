@@ -40,6 +40,14 @@ function ClipboardCheckIcon({ className }: { className?: string }) {
   );
 }
 
+function DiamondIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M12 2L2 9l10 13L22 9z" />
+    </svg>
+  );
+}
+
 function ChartBarIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}>
@@ -69,6 +77,7 @@ const NAV = [
   { href: '/products',    label: 'Products',    Icon: CubeIcon           },
   { href: '/orders',      label: 'Orders',      Icon: ClipboardIcon      },
   { href: '/stock-check', label: 'Stock Check', Icon: ClipboardCheckIcon },
+  { href: '/ledger',      label: 'Diamond Ledger', Icon: DiamondIcon     },
   { href: '/gauge',       label: 'Gauge',       Icon: ChartBarIcon       },
 ];
 
