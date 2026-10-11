@@ -1088,7 +1088,7 @@ export default function LedgerPage() {
                       <th className={`${th} text-right`}>Carats</th>
                       <th className={th}>Ref</th>
                       <th className={th}>Notes</th>
-                      <th className={th} />
+                      <th className={`${th} sticky right-0 bg-[#f0ebe3] z-10 border-l border-[#f0ebe3]`} />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#f0ebe3]">
@@ -1108,7 +1108,7 @@ export default function LedgerPage() {
                         <td className={`${tdR} text-right`}>{e.carats}</td>
                         <td className={tdR}>{e.ref || '—'}</td>
                         <td className={tdR}>{e.notes || '—'}</td>
-                        <td className={`${tdR} text-center`}>
+                        <td className={`${tdR} text-center sticky right-0 bg-white z-10 border-l border-[#f0ebe3]`}>
                           <DeleteEntryButton id={e.id} onDeleted={fetchAll} />
                         </td>
                       </tr>
