@@ -99,6 +99,7 @@ function buildSizeStr(shape: string, lengthMM: string, widthMM: string): string 
 
 const lbl = 'text-xs font-semibold text-[#6b6560] uppercase tracking-wide';
 const inp = 'w-full border border-[#ddd5c8] rounded-lg px-3 py-2 text-sm bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors';
+const selectCls = `${inp} appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_10px_center] pr-8`;
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
@@ -258,6 +259,79 @@ function ManageListSection({ title, subtitle, field, values, excludeValue, displ
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── Delete all data button ────────────────────────────────────────────────────
+
+function DeleteAllDataButton({ onDeleted }: { onDeleted: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [value, setValue]           = useState('');
+  const [deleting, setDeleting]     = useState(false);
+  const [done, setDone]             = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+
+  function cancel() {
+    setConfirming(false);
+    setValue('');
+    setError(null);
+  }
+
+  async function confirmDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/ledger/all', { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(data.message ?? 'Failed to delete data');
+      }
+      onDeleted();
+      setConfirming(false);
+      setValue('');
+      setDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete data');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <div>
+        <button type="button" onClick={() => { setConfirming(true); setDone(false); }}
+          className="border border-red-200 text-red-600 rounded-lg px-4 py-2 text-sm hover:bg-red-50 transition-colors">
+          Delete all data
+        </button>
+        {done && <p className="text-sm text-green-600 mt-2 font-medium">All data deleted</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 items-start">
+      <span className="text-xs text-red-600">Type &quot;DELETE&quot; to confirm</span>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          autoFocus
+          placeholder="DELETE"
+          className="rounded-lg border border-red-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+        />
+        <button type="button" onClick={cancel} disabled={deleting}
+          className="text-sm text-[#6b6560] border border-[#ddd5c8] rounded-lg px-3 py-1.5 hover:bg-[#f8f5f0] disabled:opacity-50 transition-colors">
+          Cancel
+        </button>
+        <button type="button" onClick={confirmDelete} disabled={value !== 'DELETE' || deleting}
+          className="text-sm text-white bg-red-600 rounded-lg px-3 py-1.5 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          {deleting ? 'Deleting…' : 'Confirm'}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -777,7 +851,7 @@ export default function LedgerPage() {
 
                 <div>
                   <label className={lbl}>Type <span className="text-red-500">*</span></label>
-                  <select className={inp} value={entryForm.type}
+                  <select className={selectCls} value={entryForm.type}
                     onChange={e => setEntryForm(p => ({ ...p, type: e.target.value as 'IN' | 'OUT' }))}>
                     <option value="IN">IN (Received)</option>
                     <option value="OUT">OUT (Dispatched)</option>
@@ -786,7 +860,7 @@ export default function LedgerPage() {
 
                 <div>
                   <label className={lbl}>Shape <span className="text-red-500">*</span></label>
-                  <input type="text" list="ledger-shapes-datalist" className={inp} placeholder="e.g. ROUND"
+                  <input type="text" list="ledger-shapes-datalist" className={inp} placeholder="Type to search..."
                     value={entryForm.shape} onChange={e => onShapeChange(e.target.value.toUpperCase())} />
                   <datalist id="ledger-shapes-datalist">
                     {shapes.map(s => <option key={s} value={s} />)}
@@ -795,33 +869,33 @@ export default function LedgerPage() {
 
                 <div>
                   <label className={lbl}>Length MM <span className="text-red-500">*</span></label>
-                  <input type="number" step="0.01" className={inp} value={entryForm.lengthMM}
+                  <input type="number" step="0.01" className={inp} placeholder="0.00" value={entryForm.lengthMM}
                     onChange={e => setEntryForm(p => ({ ...p, lengthMM: e.target.value }))} />
                 </div>
 
                 {!isRoundShape && (
                   <div>
                     <label className={lbl}>Width MM <span className="text-red-500">*</span></label>
-                    <input type="number" step="0.01" className={inp} value={entryForm.widthMM}
+                    <input type="number" step="0.01" className={inp} placeholder="0.00" value={entryForm.widthMM}
                       onChange={e => setEntryForm(p => ({ ...p, widthMM: e.target.value }))} />
                   </div>
                 )}
 
                 <div>
                   <label className={lbl}>No. of Pieces <span className="text-red-500">*</span></label>
-                  <input type="number" min={1} className={inp} value={entryForm.pieces}
+                  <input type="number" min={1} className={inp} placeholder="0" value={entryForm.pieces}
                     onChange={e => setEntryForm(p => ({ ...p, pieces: e.target.value }))} />
                 </div>
 
                 <div>
                   <label className={lbl}>Carat Weight <span className="text-red-500">*</span></label>
-                  <input type="number" step="0.001" className={inp} value={entryForm.carats}
+                  <input type="number" step="0.001" className={inp} placeholder="0.000" value={entryForm.carats}
                     onChange={e => setEntryForm(p => ({ ...p, carats: e.target.value }))} />
                 </div>
 
                 <div>
                   <label className={lbl}>Colour</label>
-                  <select className={inp} value={entryForm.colour}
+                  <select className={selectCls} value={entryForm.colour}
                     onChange={e => setEntryForm(p => ({ ...p, colour: e.target.value }))}>
                     {colours.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -829,13 +903,13 @@ export default function LedgerPage() {
 
                 <div>
                   <label className={lbl}>Invoice/Ref No.</label>
-                  <input type="text" className={inp} value={entryForm.ref}
+                  <input type="text" className={inp} placeholder="Optional" value={entryForm.ref}
                     onChange={e => setEntryForm(p => ({ ...p, ref: e.target.value }))} />
                 </div>
 
                 <div className="col-span-2">
                   <label className={lbl}>Notes</label>
-                  <input type="text" className={inp} value={entryForm.notes}
+                  <input type="text" className={inp} placeholder="Optional remarks" value={entryForm.notes}
                     onChange={e => setEntryForm(p => ({ ...p, notes: e.target.value }))} />
                 </div>
               </div>
@@ -936,21 +1010,21 @@ export default function LedgerPage() {
               </div>
               <div>
                 <label className={lbl}>Shape</label>
-                <select className={inp} value={ledgerShapeFilter} onChange={e => setLedgerShapeFilter(e.target.value)}>
+                <select className={selectCls} value={ledgerShapeFilter} onChange={e => setLedgerShapeFilter(e.target.value)}>
                   <option value="">All shapes</option>
                   {shapes.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className={lbl}>Size</label>
-                <select className={inp} value={ledgerSizeFilter} onChange={e => setLedgerSizeFilter(e.target.value)}>
+                <select className={selectCls} value={ledgerSizeFilter} onChange={e => setLedgerSizeFilter(e.target.value)}>
                   <option value="">All sizes</option>
                   {uniqueSizes.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className={lbl}>Type</label>
-                <select className={inp} value={ledgerTypeFilter}
+                <select className={selectCls} value={ledgerTypeFilter}
                   onChange={e => setLedgerTypeFilter(e.target.value as '' | LedgerEntry['type'])}>
                   <option value="">All types</option>
                   <option value="IN">IN only</option>
@@ -1155,6 +1229,12 @@ export default function LedgerPage() {
               values={sizes}
               onChanged={fetchAll}
             />
+
+            <div className="bg-white rounded-lg border border-red-200 shadow-sm p-4">
+              <h2 className="text-sm font-bold text-[#1a1a1a] mb-1">Data Management</h2>
+              <p className="text-sm text-red-600 mb-4">Delete all data — cannot be undone.</p>
+              <DeleteAllDataButton onDeleted={fetchAll} />
+            </div>
           </div>
         )}
 
