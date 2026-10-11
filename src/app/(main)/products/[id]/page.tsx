@@ -359,7 +359,7 @@ function StatusBadge({ status, onSave }: {
         <ChevronDown open={open} />
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 min-w-[200px] bg-white rounded-xl shadow-lg border border-[#f0ebe3] py-1">
+        <div className="absolute left-0 top-full mt-1 z-50 min-w-[200px] bg-white rounded-lg shadow-lg border border-[#f0ebe3] py-1">
           {STATUSES.map(s => (
             <button key={s} type="button" onClick={() => choose(s)}
               className="w-full px-4 py-2.5 text-sm hover:bg-[#f8f5f0] cursor-pointer flex items-center gap-2 text-left">
@@ -1120,7 +1120,7 @@ function ManufacturingRuns({ runs, designNumber }: { runs: ManufacturingRun[]; d
   const tdR = 'px-2.5 py-3 text-sm text-[#1a1a1a]';
 
   return (
-    <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-6">
+    <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-4">
       <h2 className="text-sm font-bold text-[#1a1a1a] mb-4">Manufacturing Runs</h2>
 
       {sorted.length === 0 ? (
@@ -1196,7 +1196,7 @@ function StoneLines({ initial, onSave }: { initial: StoneLine[]; onSave: (lines:
   const hasTotals = dLines.length > 0 || cLines.length > 0;
 
   return (
-    <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-6">
+    <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-bold text-[#1a1a1a]">Stone Lines</h2>
         <div className="flex items-center gap-2">
@@ -1420,7 +1420,7 @@ function renderEntryBody(e: ChangelogEntry): React.ReactNode {
 function ChangeLog({ entries }: { entries: ChangelogEntry[] }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
+    <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
       <button onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-6 py-4 text-sm font-bold text-[#1a1a1a] hover:bg-[#f8f5f0] transition-colors">
         <span>Change Log <span className="ml-1.5 text-xs font-normal text-[#6b6560]">({entries.length} {entries.length === 1 ? 'entry' : 'entries'})</span></span>
@@ -1518,7 +1518,7 @@ function AddVersionDrawer({ open, initialDraft, category, onClose, onSubmit }: {
         {/* Body */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-5">
           {error && (
-            <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{error}</div>
+            <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{error}</div>
           )}
 
           {/* Version Name */}
@@ -1797,7 +1797,7 @@ function LinkedProducts({ productId, linkedIds, onChange }: {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-6">
+    <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] p-4">
       <h2 className="text-sm font-bold text-[#1a1a1a] mb-4">Linked Products</h2>
 
       {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
@@ -1810,7 +1810,7 @@ function LinkedProducts({ productId, linkedIds, onChange }: {
             const embed = gdEmbed(d.cadImageUrl);
             return (
               <div key={d._id} onClick={() => router.push(`/products/${d._id}`)}
-                className="flex items-center gap-3 bg-white border border-[#f0ebe3] rounded-xl px-3 py-2 hover:shadow-sm transition-shadow cursor-pointer">
+                className="flex items-center gap-3 bg-white border border-[#f0ebe3] rounded-lg px-3 py-2 hover:shadow-sm transition-shadow cursor-pointer">
                 {embed && (
                   <img src={embed} alt={d.designNumber} referrerPolicy="no-referrer"
                     className="w-10 h-10 rounded object-cover shrink-0"
@@ -1839,7 +1839,7 @@ function LinkedProducts({ productId, linkedIds, onChange }: {
           className="w-full rounded-lg border border-brand/30 px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
         />
         {searchOpen && query.trim() && (
-          <div className="absolute left-0 top-full mt-1 z-50 w-full min-w-[240px] bg-white rounded-xl shadow-lg border border-[#f0ebe3] py-1 max-h-64 overflow-y-auto">
+          <div className="absolute left-0 top-full mt-1 z-50 w-full min-w-[240px] bg-white rounded-lg shadow-lg border border-[#f0ebe3] py-1 max-h-64 overflow-y-auto">
             {searching ? (
               <p className="px-4 py-2.5 text-sm text-[#6b6560]">Searching…</p>
             ) : results.length === 0 ? (
@@ -2052,8 +2052,8 @@ async function submitVersion(draft: VersionDraft) {
         </div>
         {/* Two-column body */}
         <div className="flex flex-col lg:flex-row gap-5">
-          <div className="lg:w-[40%] h-96 bg-[#f0ebe3] rounded-xl" />
-          <div className="lg:w-[60%] bg-white rounded-xl border border-[#e8e0d4] p-5 space-y-0">
+          <div className="lg:w-[40%] h-96 bg-[#f0ebe3] rounded-lg" />
+          <div className="lg:w-[60%] bg-white rounded-lg border border-[#e8e0d4] p-4 space-y-0">
             {[...Array(7)].map((_, i) => (
               <div key={i} className="flex items-center gap-3 py-3 border-b border-[#f8f5f0]">
                 <div className="h-3 w-32 bg-[#f0ebe3] rounded shrink-0" />
@@ -2063,7 +2063,7 @@ async function submitVersion(draft: VersionDraft) {
           </div>
         </div>
         {/* Stone lines */}
-        <div className="bg-white rounded-xl border border-[#e8e0d4] p-6 space-y-3">
+        <div className="bg-white rounded-lg border border-[#e8e0d4] p-4 space-y-3">
           <div className="h-4 w-24 bg-[#f0ebe3] rounded" />
           <div className="h-28 bg-[#f0ebe3] rounded-lg" />
         </div>
@@ -2111,7 +2111,7 @@ async function submitVersion(draft: VersionDraft) {
     <div className="px-3 sm:px-6 lg:px-8 py-8 space-y-5 max-w-6xl">
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <div className="mb-6">
+      <div className="mb-4">
         {/* Back link */}
         <div className="mb-2">
           <Link href="/products"
@@ -2235,10 +2235,10 @@ async function submitVersion(draft: VersionDraft) {
       <div className="flex flex-col lg:flex-row gap-5">
 
         {/* Left — CAD image (product-level, always V1) */}
-        <div className="lg:w-[40%] bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-5 space-y-4">
+        <div className="lg:w-[40%] bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-4 space-y-4">
           <h2 className="text-sm font-semibold text-[#1a1a1a]">CAD Image</h2>
 
-          <div className="rounded-xl overflow-hidden bg-[#f0ebe3] aspect-square flex items-center justify-center">
+          <div className="rounded-lg overflow-hidden bg-[#f0ebe3] aspect-square flex items-center justify-center">
             {showImg ? (
               <img src={embed!} alt={product.designNumber} referrerPolicy="no-referrer"
                 className="w-full h-full object-contain"
@@ -2278,7 +2278,7 @@ async function submitVersion(draft: VersionDraft) {
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-[#6b6560]">Reference Image</label>
                 <img src={product.referenceImageUrl} alt="Reference"
-                  className="max-h-64 w-full rounded-xl object-contain border border-[#f0ebe3]" />
+                  className="max-h-64 w-full rounded-lg object-contain border border-[#f0ebe3]" />
               </div>
             )}
             <div className="space-y-2">
@@ -2343,7 +2343,7 @@ async function submitVersion(draft: VersionDraft) {
         </div>
 
         {/* Right — Product / Version info */}
-        <div className="lg:w-[60%] bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-5">
+        <div className="lg:w-[60%] bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-4">
           <div className="flex items-start justify-between mb-2">
             <h2 className="text-sm font-semibold text-[#1a1a1a]">
               {isV1 ? 'Product Info' : `Version ${activeTab}`}

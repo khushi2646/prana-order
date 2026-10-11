@@ -339,7 +339,7 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
   if (editing) {
     const qty = parseInt(editForm.quantity) || 0;
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#456158]/30 p-5 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm border border-[#456158]/30 p-4 space-y-4">
         {/* Edit form */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-[#1a1a1a]">Edit product</span>
@@ -359,7 +359,7 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-[#6b6560] uppercase tracking-wider">Gold Colour</label>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             {GOLD_COLOURS.map(c => (
               <label key={c.value} className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox"
@@ -469,7 +469,7 @@ function ProductCard({ product, index, orderId, onRefresh, cadEntry }: {
   // ── Read-only card ──────────────────────────────────────────────────────────
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-5 pb-10 space-y-3 relative min-h-32${thumbUrl ? ' pr-28' : ''}`}>
+    <div className={`bg-white rounded-lg shadow-sm border border-[#e8e0d4] p-4 pb-10 space-y-3 relative min-h-32${thumbUrl ? ' pr-28' : ''}`}>
       {thumbUrl && (
         <img
           src={gdriveThumbnail(thumbUrl)}
@@ -820,7 +820,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       <div className="min-h-screen bg-[#f8f5f0] px-3 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto">
 
         {/* ── Back link ────────────────────────────────────────────────── */}
-        <Link href="/orders" className="inline-flex items-center gap-1.5 text-sm text-[#6b6560] hover:text-[#1a1a1a] mb-6 group transition-colors">
+        <Link href="/orders" className="inline-flex items-center gap-1.5 text-sm text-[#6b6560] hover:text-[#1a1a1a] mb-4 group transition-colors">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
@@ -880,7 +880,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* ── Order header edit ─────────────────────────────────────────── */}
         {editing && headerForm && (
-          <div className="bg-white rounded-xl border border-[#456158]/30 shadow-sm p-6 mb-8 space-y-5">
+          <div className="bg-white rounded-lg border border-[#456158]/30 shadow-sm p-4 mb-8 space-y-5">
             <h2 className="font-semibold text-[#1a1a1a] mb-1">Edit Order Details</h2>
 
             <div className="grid grid-cols-2 gap-4">
@@ -956,9 +956,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Read-only order fields when not editing */}
         {!editing && (
-          <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-6 mb-8 space-y-3">
+          <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-4 mb-8 space-y-3">
             {order.goldRate && (
-              <div className="flex gap-6 text-sm">
+              <div className="flex gap-4 text-sm">
                 <span><span className="text-xs text-[#6b6560] mr-1.5">Gold Rate</span>{order.goldRate.isFixed ? `Fixed — ₹${order.goldRate.fixedRate ?? '—'}/g` : 'Not Fixed'}</span>
               </div>
             )}
@@ -978,7 +978,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           {order.followUps.length > 0 ? (
             <div className="space-y-3 mb-4">
               {order.followUps.map((fu, i) => (
-                <div key={i} className="flex gap-4 bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-4">
+                <div key={i} className="flex gap-4 bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-4">
                   <div className="shrink-0 w-2 h-2 rounded-full bg-[#456158] mt-1.5" />
                   <div>
                     <p className="text-xs text-[#6b6560] mb-0.5">{fmtDate(fu.date)}</p>
@@ -997,7 +997,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <button onClick={() => setAddingFollowUp(true)}
               className="text-sm text-[#456158] font-semibold hover:underline">+ Add Follow-up</button>
           ) : (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-4 space-y-3">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-4 space-y-3">
               <textarea className={`${inp} resize-none`} rows={3} placeholder="Notes…"
                 value={followUpNotes} onChange={e => setFollowUpNotes(e.target.value)} autoFocus />
               {fuError && <p className="text-xs text-red-600">{fuError}</p>}
@@ -1059,7 +1059,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           {diamondSummary.length === 0 ? (
             <p className="text-sm text-[#6b6560]">No diamond requirements logged yet.</p>
           ) : (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm overflow-hidden">
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-sm">
                   <thead>
@@ -1102,7 +1102,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       {printModalOpen && (
         <>
           <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setPrintModalOpen(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl p-6 w-[480px] max-h-[80vh] overflow-y-auto z-50">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl p-4 w-[480px] max-h-[80vh] overflow-y-auto z-50">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-playfair text-xl font-semibold text-[#1a1a1a]">Select Products for Summary</h2>
               <button type="button" onClick={() => setPrintModalOpen(false)}

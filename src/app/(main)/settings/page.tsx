@@ -104,7 +104,7 @@ function DeleteRow({ action }: { action: DeleteAction }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6 py-4 border-t border-red-100 first:border-t-0">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 py-4 border-t border-red-100 first:border-t-0">
       <div className="min-w-0">
         <p className="font-semibold text-[#1a1a1a]">{action.label}</p>
         <p className="text-sm text-[#6b6560] mt-0.5">{action.description}</p>
@@ -265,7 +265,7 @@ function ProductStylesSection() {
   useEffect(() => { fetchStyles(); }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
+    <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
       <h2 className="text-lg font-semibold text-[#1a1a1a] mb-1">Product Styles</h2>
       <p className="text-sm text-[#6b6560] mb-4">Manage style options shown on each product page</p>
 
@@ -300,7 +300,7 @@ export default function SettingsPage() {
         <h1 className="font-playfair text-3xl font-semibold text-[#1a1a1a] mb-8">Settings</h1>
 
         {/* ── Danger Zone ───────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-red-200 p-4 mb-4">
           <h2 className="text-lg font-semibold text-red-700 mb-4">Danger Zone</h2>
           {DELETE_ACTIONS.map(action => (
             <DeleteRow key={action.id} action={action} />
@@ -308,7 +308,7 @@ export default function SettingsPage() {
         </div>
 
         {/* ── Categories & Styles ───────────────────────────────────── */}
-        <div className="bg-white rounded-xl shadow-sm border border-[#e8e0d4] p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-[#e8e0d4] p-4 mb-4">
           <h2 className="text-lg font-semibold text-[#1a1a1a] mb-1">Categories &amp; Styles</h2>
           <p className="text-sm text-[#6b6560] mb-4">
             To add new categories or styles, update the <code className="font-mono text-xs bg-[#f0ebe3] px-1 py-0.5 rounded">CATEGORY_MAP</code> constant in{' '}
@@ -316,7 +316,7 @@ export default function SettingsPage() {
             <code className="font-mono text-xs bg-[#f0ebe3] px-1 py-0.5 rounded">src/app/products/new/page.tsx</code>
           </p>
 
-          <div className="rounded-xl border border-[#f0ebe3] overflow-hidden w-full text-sm">
+          <div className="rounded-lg border border-[#f0ebe3] overflow-hidden w-full text-sm">
             <table className="w-full">
               <thead>
                 <tr className="bg-[#f0ebe3]">

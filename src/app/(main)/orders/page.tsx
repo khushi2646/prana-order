@@ -128,7 +128,7 @@ function OrderCard({ order, onClick }: { order: Order; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm px-4 py-4 sm:p-5 border border-[#e8e0d4] overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+      className="bg-white rounded-lg shadow-sm px-4 py-4 sm:p-4 border border-[#e8e0d4] overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
     >
       {/* Row 1 */}
       <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mb-2">
@@ -189,7 +189,7 @@ function FlatProductCard({ product, cadImageUrl, onClick }: {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm p-4 border border-[#e8e0d4] cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+      className="bg-white rounded-lg shadow-sm p-4 border border-[#e8e0d4] cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
     >
       <div className="flex gap-3">
         {/* Content */}
@@ -282,7 +282,7 @@ function KanbanCard({ product, cadImageUrl, onClick, dragStateRef, onStageChange
       }}
       onDragEnd={() => setDragging(false)}
       onClick={onClick}
-      className={`relative bg-white rounded-xl shadow-sm p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow duration-150 ${dragging ? 'opacity-50' : ''}`}
+      className={`relative bg-white rounded-lg shadow-sm p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow duration-150 ${dragging ? 'opacity-50' : ''}`}
     >
       {/* Delete button */}
       <button
@@ -297,7 +297,7 @@ function KanbanCard({ product, cadImageUrl, onClick, dragStateRef, onStageChange
       {confirming && (
         <div
           onClick={e => e.stopPropagation()}
-          className="absolute inset-0 z-10 bg-white rounded-xl border border-red-200 flex flex-col items-center justify-center gap-2 p-3"
+          className="absolute inset-0 z-10 bg-white rounded-lg border border-red-200 flex flex-col items-center justify-center gap-2 p-3"
         >
           <p className="text-xs text-[#1a1a1a] text-center">Remove from order?</p>
           <div className="flex gap-2">
@@ -607,7 +607,7 @@ export default function OrdersPage() {
         </div>
 
         {/* ── Tabs ──────────────────────────────────────────────────────── */}
-        <div className="flex gap-6 border-b border-[#e8e0d4] mb-6">
+        <div className="flex gap-4 border-b border-[#e8e0d4] mb-4">
           {(['orders', 'products', 'kanban'] as const).map(tab => (
             <button
               key={tab}
@@ -635,7 +635,7 @@ export default function OrdersPage() {
           </svg>
           <input
             type="text"
-            className="w-full rounded-xl border border-[#ddd5c8] pl-9 pr-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a]"
+            className="w-full rounded-lg border border-[#ddd5c8] pl-9 pr-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors placeholder-[#6b6560]/50 text-[#1a1a1a]"
             placeholder={
               activeTab === 'orders'
                 ? 'Search by order number, customer name or phone…'
@@ -647,7 +647,7 @@ export default function OrdersPage() {
         </div>
 
         {/* ── Filter bar ────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-3 sm:p-5 mt-4 mb-6 flex flex-wrap gap-3 sm:gap-4 items-center">
+        <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-3 sm:p-4 mt-4 mb-4 flex flex-wrap gap-3 sm:gap-4 items-center">
           <FilterToggle
             options={[{ label: 'All', value: '' }, { label: 'Stock', value: 'stock' }, { label: 'Customer', value: 'customer' }]}
             value={typeFilter}
@@ -727,7 +727,7 @@ export default function OrdersPage() {
                         patchProductStage(dragged.orderMongoId, dragged.productIndex, stageCfg.value);
                       }
                     }}
-                    className={`w-72 shrink-0 rounded-xl border border-[#e5e7eb] min-h-[500px] p-3 transition-colors ${isDragOver ? 'bg-[#e8f0ee]' : 'bg-[#f3f4f6]'}`}
+                    className={`w-72 shrink-0 rounded-lg border border-[#e5e7eb] min-h-[500px] p-3 transition-colors ${isDragOver ? 'bg-[#e8f0ee]' : 'bg-[#f3f4f6]'}`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-bold text-sm text-[#1a1a1a]">{stageCfg.label}</span>

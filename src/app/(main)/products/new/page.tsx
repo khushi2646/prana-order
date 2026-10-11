@@ -497,7 +497,7 @@ function NewProductForm() {
         {/* Back link */}
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm text-[#6b6560] hover:text-[#1a1a1a] mb-6 group transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-[#6b6560] hover:text-[#1a1a1a] mb-4 group transition-colors"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -518,7 +518,7 @@ function NewProductForm() {
         <form onSubmit={handleSubmit} noValidate>
 
           {/* ── Identity ─────────────────────────────────────────────────── */}
-          <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-4 mb-4">
             <Section title="Identity" />
             <div className="space-y-3">
 
@@ -648,7 +648,7 @@ function NewProductForm() {
           </div>
 
           {/* ── Gold & Stones ─────────────────────────────────────────────── */}
-          <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-4 mb-4">
             <Section title="Gold & Stones" />
             <div className="space-y-3">
               <div>
@@ -673,7 +673,7 @@ function NewProductForm() {
           </div>
 
           {/* ── Production ────────────────────────────────────────────────── */}
-          <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-4 mb-4">
             <Section title="Production" />
             <div className="space-y-3">
               <div>
@@ -699,7 +699,7 @@ function NewProductForm() {
           </div>
 
           {/* ── Stone Lines ───────────────────────────────────────────────── */}
-          <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-sm p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] font-bold text-gold uppercase tracking-[0.14em]">Stone Lines</p>
               <button type="button" onClick={addLine}
@@ -788,7 +788,7 @@ function NewProductForm() {
 
           {/* Error */}
           {error && (
-            <div className="mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
               {error}
             </div>
           )}

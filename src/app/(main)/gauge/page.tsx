@@ -205,7 +205,7 @@ export default function GaugePage() {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
+      <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-[#f0ebe3] border-b border-[#e0d8ce]">
@@ -291,7 +291,7 @@ export default function GaugePage() {
         <>
           <div aria-hidden className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px]" onClick={closeAdd} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={closeAdd}>
-            <div className="bg-white rounded-2xl shadow-2xl border border-[#e8e0d4] w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-xl shadow-2xl border border-[#e8e0d4] w-full max-w-md" onClick={e => e.stopPropagation()}>
               <div className="h-1 bg-brand rounded-t-2xl" />
               <div className="px-6 py-5">
                 <h2 className="text-[15px] font-bold text-[#1a1a1a] mb-4">Add Gauge Entry</h2>

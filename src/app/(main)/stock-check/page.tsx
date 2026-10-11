@@ -390,7 +390,7 @@ export default function StockCheckPage() {
       </div>
 
       {/* ── Mode toggle ─────────────────────────────────────────────── */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-4">
         {(['product', 'order'] as const).map(m => (
           <button
             key={m}
@@ -413,7 +413,7 @@ export default function StockCheckPage() {
       {mode === 'product' && (
         <>
           {/* Product selector */}
-          <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-5 mb-6">
+          <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-4 mb-4">
             <label className="block text-[10px] font-bold text-[#6b6560] uppercase tracking-[0.12em] mb-2">
               Select Products
             </label>
@@ -430,7 +430,7 @@ export default function StockCheckPage() {
               />
 
               {dropdownOpen && filteredProducts.length > 0 && (
-                <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#ddd5c8] rounded-xl shadow-[0_8px_24px_rgba(26,26,26,0.12)]">
+                <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#ddd5c8] rounded-lg shadow-[0_8px_24px_rgba(26,26,26,0.12)]">
                   {filteredProducts.map(p => (
                     <button key={p._id} onMouseDown={() => handleSelectProduct(p)}
                       className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl hover:bg-[#f8f5f0] text-[#1a1a1a]">
@@ -444,7 +444,7 @@ export default function StockCheckPage() {
               )}
 
               {dropdownOpen && !productsLoading && filteredProducts.length === 0 && query && (
-                <div className="absolute z-20 mt-1 w-full bg-white border border-[#ddd5c8] rounded-xl shadow-lg px-4 py-3 text-sm text-[#6b6560]">
+                <div className="absolute z-20 mt-1 w-full bg-white border border-[#ddd5c8] rounded-lg shadow-lg px-4 py-3 text-sm text-[#6b6560]">
                   No products match &ldquo;{query}&rdquo;
                 </div>
               )}
@@ -470,7 +470,7 @@ export default function StockCheckPage() {
           </div>
 
           {selectedProducts.length === 0 && !stockLoading && !stockError && (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex items-center justify-center h-40">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex items-center justify-center h-40">
               <p className="text-sm text-[#6b6560]">Search and select products to check stock</p>
             </div>
           )}
@@ -481,16 +481,16 @@ export default function StockCheckPage() {
             </div>
           )}
           {stockError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{stockError}</div>
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{stockError}</div>
           )}
           {!stockLoading && !stockError && checked && totalLines === 0 && (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex flex-col items-center justify-center h-40 gap-1 text-[#6b6560]">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex flex-col items-center justify-center h-40 gap-1 text-[#6b6560]">
               <p className="text-sm font-medium">No stone lines on the selected products.</p>
               <p className="text-xs">Add stone lines on the product detail page first.</p>
             </div>
           )}
           {!stockLoading && !stockError && totalLines > 0 && (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
               <div className="px-5 py-3.5 border-b border-[#f0ebe3] flex items-center justify-between gap-4">
                 <p className="text-sm text-[#6b6560]">
                   <span className={`font-semibold ${inStockCount === totalLines ? 'text-emerald-600' : 'text-[#1a1a1a]'}`}>
@@ -579,7 +579,7 @@ export default function StockCheckPage() {
       {mode === 'order' && (
         <>
           {/* Order selector */}
-          <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-5 mb-6">
+          <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] p-4 mb-4">
             <label className="block text-[10px] font-bold text-[#6b6560] uppercase tracking-[0.12em] mb-2">
               Select Orders
             </label>
@@ -596,7 +596,7 @@ export default function StockCheckPage() {
               />
 
               {orderDropdownOpen && filteredOrders.length > 0 && (
-                <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#ddd5c8] rounded-xl shadow-[0_8px_24px_rgba(26,26,26,0.12)]">
+                <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#ddd5c8] rounded-lg shadow-[0_8px_24px_rgba(26,26,26,0.12)]">
                   {filteredOrders.map(o => (
                     <button key={o._id} onMouseDown={() => handleSelectOrder(o)}
                       className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl hover:bg-[#f8f5f0] text-[#1a1a1a]">
@@ -611,7 +611,7 @@ export default function StockCheckPage() {
               )}
 
               {orderDropdownOpen && !ordersLoading && filteredOrders.length === 0 && orderQuery && (
-                <div className="absolute z-20 mt-1 w-full bg-white border border-[#ddd5c8] rounded-xl shadow-lg px-4 py-3 text-sm text-[#6b6560]">
+                <div className="absolute z-20 mt-1 w-full bg-white border border-[#ddd5c8] rounded-lg shadow-lg px-4 py-3 text-sm text-[#6b6560]">
                   No orders match &ldquo;{orderQuery}&rdquo;
                 </div>
               )}
@@ -638,7 +638,7 @@ export default function StockCheckPage() {
 
           {/* No order selected */}
           {selectedOrders.length === 0 && !orderStockLoading && !orderStockError && (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex items-center justify-center h-40">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex items-center justify-center h-40">
               <p className="text-sm text-[#6b6560]">Search and select orders to check stock</p>
             </div>
           )}
@@ -653,12 +653,12 @@ export default function StockCheckPage() {
 
           {/* Error */}
           {orderStockError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{orderStockError}</div>
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{orderStockError}</div>
           )}
 
           {/* No stone lines on these orders */}
           {!orderStockLoading && !orderStockError && orderChecked && orderTotalLines === 0 && (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex flex-col items-center justify-center h-40 gap-1 text-[#6b6560]">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] flex flex-col items-center justify-center h-40 gap-1 text-[#6b6560]">
               <p className="text-sm font-medium">No diamond requirements logged for the selected orders yet.</p>
               <p className="text-xs">Add stone lines to products in these orders first.</p>
             </div>
@@ -666,7 +666,7 @@ export default function StockCheckPage() {
 
           {/* Results */}
           {!orderStockLoading && !orderStockError && orderTotalLines > 0 && (
-            <div className="bg-white rounded-xl border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#e8e0d4] shadow-[0_2px_16px_rgba(26,26,26,0.06)] overflow-hidden">
               <div className="px-5 py-3.5 border-b border-[#f0ebe3] flex items-center justify-between gap-4">
                 <p className="text-sm text-[#6b6560]">
                   <span className={`font-semibold ${orderInStockCount === orderTotalLines ? 'text-emerald-600' : 'text-[#1a1a1a]'}`}>

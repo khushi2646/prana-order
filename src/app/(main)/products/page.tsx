@@ -129,7 +129,7 @@ function ProductCard({ p }: { p: Product }) {
   return (
     <Link
       href={`/products/${p._id}`}
-      className="bg-white rounded-xl overflow-hidden border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] hover:shadow-[0_10px_28px_rgba(26,26,26,0.13)] hover:-translate-y-1 transition-all duration-200 cursor-pointer group block"
+      className="bg-white rounded-lg overflow-hidden border border-[#e8e0d4] shadow-[0_2px_12px_rgba(26,26,26,0.06)] hover:shadow-[0_10px_28px_rgba(26,26,26,0.13)] hover:-translate-y-1 transition-all duration-200 cursor-pointer group block"
     >
       {/* Thumbnail */}
       <div className="relative h-36 sm:h-48 overflow-hidden">
@@ -317,7 +317,7 @@ export default function ProductsPage() {
       <div className="px-3 sm:px-6 lg:px-8 py-8">
 
         {/* ── Top bar ─────────────────────────────────────────────────── */}
-        <div className="mb-6 space-y-3">
+        <div className="mb-4 space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full sm:max-w-lg">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><SearchIcon /></span>
@@ -395,7 +395,7 @@ export default function ProductsPage() {
 
         {/* ── Error ──────────────────────────────────────────────────── */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{error}</div>
         )}
 
         {/* ── Empty state ─────────────────────────────────────────────── */}
