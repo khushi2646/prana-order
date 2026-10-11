@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -99,7 +100,17 @@ function buildSizeStr(shape: string, lengthMM: string, widthMM: string): string 
 
 const lbl = 'text-xs font-semibold text-[#6b6560] uppercase tracking-wide';
 const inp = 'w-full border border-[#ddd5c8] rounded-lg px-3 py-2 text-sm bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#456158]/20 focus:border-[#456158] transition-colors';
-const selectCls = `${inp} appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_10px_center] pr-8`;
+const SelectWrapper = ({ children }: { children: ReactNode }) => (
+  <div className="relative">
+    {children}
+    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+      <svg className="w-3.5 h-3.5 text-[#6b6560]" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
+  </div>
+);
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
@@ -142,7 +153,7 @@ function DeleteEntryButton({ id, onDeleted }: { id: number; onDeleted: () => voi
   if (!confirming) {
     return (
       <button type="button" onClick={() => setConfirming(true)}
-        className="text-red-400 hover:text-red-600 text-xs w-5 h-5 rounded-full flex items-center justify-center mx-auto">
+        className="w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 text-xs font-bold transition-colors mx-auto">
         ×
       </button>
     );
@@ -851,11 +862,13 @@ export default function LedgerPage() {
 
                 <div>
                   <label className={lbl}>Type <span className="text-red-500">*</span></label>
-                  <select className={selectCls} value={entryForm.type}
-                    onChange={e => setEntryForm(p => ({ ...p, type: e.target.value as 'IN' | 'OUT' }))}>
-                    <option value="IN">IN (Received)</option>
-                    <option value="OUT">OUT (Dispatched)</option>
-                  </select>
+                  <SelectWrapper>
+                    <select className={inp} value={entryForm.type}
+                      onChange={e => setEntryForm(p => ({ ...p, type: e.target.value as 'IN' | 'OUT' }))}>
+                      <option value="IN">IN (Received)</option>
+                      <option value="OUT">OUT (Dispatched)</option>
+                    </select>
+                  </SelectWrapper>
                 </div>
 
                 <div>
@@ -895,10 +908,12 @@ export default function LedgerPage() {
 
                 <div>
                   <label className={lbl}>Colour</label>
-                  <select className={selectCls} value={entryForm.colour}
-                    onChange={e => setEntryForm(p => ({ ...p, colour: e.target.value }))}>
-                    {colours.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <SelectWrapper>
+                    <select className={inp} value={entryForm.colour}
+                      onChange={e => setEntryForm(p => ({ ...p, colour: e.target.value }))}>
+                      {colours.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </SelectWrapper>
                 </div>
 
                 <div>
@@ -1010,27 +1025,33 @@ export default function LedgerPage() {
               </div>
               <div>
                 <label className={lbl}>Shape</label>
-                <select className={selectCls} value={ledgerShapeFilter} onChange={e => setLedgerShapeFilter(e.target.value)}>
-                  <option value="">All shapes</option>
-                  {shapes.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <SelectWrapper>
+                  <select className={inp} value={ledgerShapeFilter} onChange={e => setLedgerShapeFilter(e.target.value)}>
+                    <option value="">All shapes</option>
+                    {shapes.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </SelectWrapper>
               </div>
               <div>
                 <label className={lbl}>Size</label>
-                <select className={selectCls} value={ledgerSizeFilter} onChange={e => setLedgerSizeFilter(e.target.value)}>
-                  <option value="">All sizes</option>
-                  {uniqueSizes.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <SelectWrapper>
+                  <select className={inp} value={ledgerSizeFilter} onChange={e => setLedgerSizeFilter(e.target.value)}>
+                    <option value="">All sizes</option>
+                    {uniqueSizes.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </SelectWrapper>
               </div>
               <div>
                 <label className={lbl}>Type</label>
-                <select className={selectCls} value={ledgerTypeFilter}
-                  onChange={e => setLedgerTypeFilter(e.target.value as '' | LedgerEntry['type'])}>
-                  <option value="">All types</option>
-                  <option value="IN">IN only</option>
-                  <option value="OUT">OUT only</option>
-                  <option value="CORRECTION">CORRECTION only</option>
-                </select>
+                <SelectWrapper>
+                  <select className={inp} value={ledgerTypeFilter}
+                    onChange={e => setLedgerTypeFilter(e.target.value as '' | LedgerEntry['type'])}>
+                    <option value="">All types</option>
+                    <option value="IN">IN only</option>
+                    <option value="OUT">OUT only</option>
+                    <option value="CORRECTION">CORRECTION only</option>
+                  </select>
+                </SelectWrapper>
               </div>
               <div className="flex items-end gap-1.5">
                 <div>
